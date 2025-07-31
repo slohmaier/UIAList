@@ -18,7 +18,7 @@ public:
     bool isVisible() const;
 
 signals:
-    void activateRequested();
+    void activateRequested(void* foregroundWindow);
 
 private slots:
     void activate();

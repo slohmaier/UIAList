@@ -4,6 +4,10 @@
 #include <QDebug>
 #include <QShortcut>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 UIAListIcon::UIAListIcon(QObject *parent)
     : QObject(parent), m_trayIcon(nullptr), m_contextMenu(nullptr), m_activateAction(nullptr), m_quitAction(nullptr), m_globalShortcut(nullptr)
 {
@@ -74,7 +78,15 @@ void UIAListIcon::createContextMenu()
 void UIAListIcon::activate()
 {
     qDebug() << "Activate action triggered";
-    emit activateRequested();
+    
+#ifdef _WIN32
+    // Capture the foreground window before showing our window
+    HWND foregroundWindow = GetForegroundWindow();
+    qDebug() << "Captured foreground window:" << foregroundWindow;
+    emit activateRequested((void*)foregroundWindow);
+#else
+    emit activateRequested(nullptr);
+#endif
 }
 
 void UIAListIcon::quit()
