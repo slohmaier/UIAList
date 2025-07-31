@@ -1,0 +1,21 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Black outline -->
+  <rect x="0" y="0" width="32" height="32" fill="none" stroke="#000000" stroke-width="2" rx="3"/>
+  
+  <!-- Dark rectangular background with white border -->
+  <rect x="2" y="2" width="28" height="28" fill="#2d2d2d" stroke="#ffffff" stroke-width="2" rx="2"/>
+  
+  <!-- Main list representation - three horizontal bars -->
+  <rect x="6" y="9" width="20" height="2" fill="#e6e6e6" rx="1"/>
+  <rect x="6" y="15" width="20" height="2" fill="#e6e6e6" rx="1"/>
+  <rect x="6" y="21" width="20" height="2" fill="#e6e6e6" rx="1"/>
+  
+  <!-- Focus indicator dots - small circles to the left of each bar -->
+  <circle cx="4" cy="10" r="1.5" fill="#4a9eff"/>
+  <circle cx="4" cy="16" r="1.5" fill="#4a9eff"/>
+  <circle cx="4" cy="22" r="1.5" fill="#4a9eff"/>
+  
+  <!-- Subtle filter/search indicator in top right -->
+  <circle cx="26" cy="6" r="2" fill="#666666"/>
+  <rect x="25" y="5" width="2" height="2" fill="#2d2d2d"/>
+</svg>
