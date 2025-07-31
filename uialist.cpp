@@ -12,7 +12,7 @@
 UIAList::UIAList(QWidget *parent)
     : QMainWindow(parent), m_trayIcon(nullptr), m_centralWidget(nullptr), 
       m_layout(nullptr), m_filterEdit(nullptr), m_listWidget(nullptr),
-      m_uiAutomation(nullptr), m_controlViewWalker(nullptr)
+      m_hideEmptyTitlesCheckBox(nullptr), m_uiAutomation(nullptr), m_controlViewWalker(nullptr)
 {
     setupUI();
     initializeUIAutomation();
@@ -46,8 +46,14 @@ void UIAList::setupUI()
     m_listWidget = new QListWidget(this);
     connect(m_listWidget, &QListWidget::itemSelectionChanged, this, &UIAList::onItemSelectionChanged);
     
+    // Hide empty titles checkbox
+    m_hideEmptyTitlesCheckBox = new QCheckBox("Hide controls with no or empty title", this);
+    m_hideEmptyTitlesCheckBox->setChecked(true); // Enabled by default
+    connect(m_hideEmptyTitlesCheckBox, &QCheckBox::toggled, this, &UIAList::onHideEmptyTitlesChanged);
+    
     m_layout->addWidget(m_filterEdit);
     m_layout->addWidget(m_listWidget);
+    m_layout->addWidget(m_hideEmptyTitlesCheckBox);
     
     setWindowTitle("UI Automation List");
     resize(600, 400);
@@ -154,8 +160,8 @@ void UIAList::walkControls(IUIAutomationElement* element, IUIAutomationTreeWalke
     // Create display text
     QString displayText = QString("%1: %2").arg(controlTypeStr, controlName);
     
-    // Store control info
-    ControlInfo controlInfo(displayText, element);
+    // Store control info with original name
+    ControlInfo controlInfo(displayText, controlName, element);
     m_allControls.append(controlInfo);
     
     // Walk child elements
@@ -221,8 +227,19 @@ void UIAList::populateListWidget()
 {
     m_listWidget->clear();
     
+    bool hideEmptyTitles = m_hideEmptyTitlesCheckBox && m_hideEmptyTitlesCheckBox->isChecked();
+    
     for (int i = 0; i < m_allControls.size(); ++i) {
         const ControlInfo& controlInfo = m_allControls[i];
+        
+        // Skip controls with empty or no titles if checkbox is checked
+        if (hideEmptyTitles) {
+            QString name = controlInfo.originalName.trimmed();
+            if (name.isEmpty() || name == "(no name)") {
+                continue; // Skip this control
+            }
+        }
+        
         QListWidgetItem* item = new QListWidgetItem(controlInfo.displayText);
         item->setData(Qt::UserRole, i); // Store index to m_allControls
         m_listWidget->addItem(item);
@@ -253,6 +270,13 @@ void UIAList::onItemSelectionChanged()
         m_selectedControl = m_allControls[index];
         qDebug() << "Selected control:" << m_selectedControl.displayText;
     }
+}
+
+void UIAList::onHideEmptyTitlesChanged(bool checked)
+{
+    Q_UNUSED(checked)
+    // Repopulate the list with the new filter setting
+    populateListWidget();
 }
 
 void UIAList::cleanupUIAutomation()

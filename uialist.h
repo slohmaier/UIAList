@@ -5,6 +5,7 @@
 #include <QVBoxLayout>
 #include <QLineEdit>
 #include <QListWidget>
+#include <QCheckBox>
 #include <QMap>
 #include <QString>
 
@@ -18,11 +19,12 @@ class UIAListIcon;
 
 struct ControlInfo {
     QString displayText;
+    QString originalName; // Store the original control name for filtering
     IUIAutomationElement* element;
     
     ControlInfo() : element(nullptr) {}
-    ControlInfo(const QString& text, IUIAutomationElement* elem) 
-        : displayText(text), element(elem) 
+    ControlInfo(const QString& text, const QString& name, IUIAutomationElement* elem) 
+        : displayText(text), originalName(name), element(elem) 
     {
         if (element) element->AddRef();
     }
@@ -31,7 +33,7 @@ struct ControlInfo {
         if (element) element->Release();
     }
     
-    ControlInfo(const ControlInfo& other) : displayText(other.displayText), element(other.element) {
+    ControlInfo(const ControlInfo& other) : displayText(other.displayText), originalName(other.originalName), element(other.element) {
         if (element) element->AddRef();
     }
     
@@ -39,6 +41,7 @@ struct ControlInfo {
         if (this != &other) {
             if (element) element->Release();
             displayText = other.displayText;
+            originalName = other.originalName;
             element = other.element;
             if (element) element->AddRef();
         }
@@ -58,6 +61,7 @@ private slots:
     void showWindow(void* foregroundWindow);
     void onFilterChanged(const QString& text);
     void onItemSelectionChanged();
+    void onHideEmptyTitlesChanged(bool checked);
 
 private:
     void setupUI();
@@ -75,6 +79,7 @@ private:
     QVBoxLayout *m_layout;
     QLineEdit *m_filterEdit;
     QListWidget *m_listWidget;
+    QCheckBox *m_hideEmptyTitlesCheckBox;
     
     // UI Automation
     IUIAutomation *m_uiAutomation;
