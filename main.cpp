@@ -18,6 +18,7 @@ int main(int argc, char *argv[])
         }
     }
     UIAList w;
-    w.show();
+    // Don't show window initially - only show tray icon
+    // Window will be shown when Activate action is triggered
     return a.exec();
 }

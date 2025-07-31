@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file alias="uialist_icon.png">@CMAKE_CURRENT_BINARY_DIR@/uialist_icon.png</file>
+    </qresource>
+</RCC>

@@ -14,10 +14,34 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools)
 
 set(TS_FILES UIAList_en_US.ts)
 
+# Convert SVG icon to PNG
+find_program(INKSCAPE_EXECUTABLE inkscape)
+if(INKSCAPE_EXECUTABLE)
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png
+        COMMAND ${INKSCAPE_EXECUTABLE} --export-type=png --export-filename=${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png --export-width=32 --export-height=32 ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.svg
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.svg
+        COMMENT "Converting SVG icon to PNG"
+    )
+    add_custom_target(convert_icon ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png)
+    
+    # Create Qt resource file
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc.in ${CMAKE_CURRENT_BINARY_DIR}/resources.qrc @ONLY)
+    
+    set(RESOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/resources.qrc)
+    set_source_files_properties(${RESOURCE_FILES} PROPERTIES OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png)
+else()
+    message(WARNING "Inkscape not found. SVG icon will not be converted to PNG automatically.")
+    set(RESOURCE_FILES "")
+endif()
+
 set(PROJECT_SOURCES
         main.cpp
         uialist.cpp
         uialist.h
+        uialisticon.cpp
+        uialisticon.h
+        ${RESOURCE_FILES}
         ${TS_FILES}
 )
 
@@ -49,6 +73,11 @@ else()
 endif()
 
 target_link_libraries(UIAList PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+
+# Ensure PNG is generated before compiling resources
+if(INKSCAPE_EXECUTABLE)
+    add_dependencies(UIAList convert_icon)
+endif()
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
