@@ -2,14 +2,20 @@
 #include <QApplication>
 #include <QIcon>
 #include <QDebug>
-#include <QShortcut>
 
 #ifdef _WIN32
 #include <windows.h>
+#else
+#include <QShortcut>
 #endif
 
+#ifdef _WIN32
+UIAListIcon::UIAListIcon(QObject *parent)
+    : QObject(parent), m_trayIcon(nullptr), m_contextMenu(nullptr), m_activateAction(nullptr), m_quitAction(nullptr)
+#else
 UIAListIcon::UIAListIcon(QObject *parent)
     : QObject(parent), m_trayIcon(nullptr), m_contextMenu(nullptr), m_activateAction(nullptr), m_quitAction(nullptr), m_globalShortcut(nullptr)
+#endif
 {
     if (!QSystemTrayIcon::isSystemTrayAvailable()) {
         qDebug() << "System tray is not available!";
@@ -29,15 +35,12 @@ UIAListIcon::UIAListIcon(QObject *parent)
     m_trayIcon->setContextMenu(m_contextMenu);
     qDebug() << "Context menu set";
     
-    // Create global shortcut - Note: QShortcut only works when app has focus
-    // For true global shortcuts, you'd need platform-specific code or a library
-    m_globalShortcut = new QShortcut(QKeySequence("Ctrl+Alt+U"), qApp);
-    connect(m_globalShortcut, &QShortcut::activated, this, &UIAListIcon::activate);
-    qDebug() << "Global shortcut Ctrl+Alt+U registered";
+    registerGlobalShortcut();
 }
 
 UIAListIcon::~UIAListIcon()
 {
+    unregisterGlobalShortcut();
     if (m_trayIcon) {
         m_trayIcon->hide();
     }
@@ -93,3 +96,55 @@ void UIAListIcon::quit()
 {
     QApplication::quit();
 }
+
+void UIAListIcon::registerGlobalShortcut()
+{
+#ifdef _WIN32
+    // Install native event filter to handle hotkey messages
+    qApp->installNativeEventFilter(this);
+    
+    // Register Ctrl+Alt+U hotkey (MOD_CONTROL | MOD_ALT, VK_U)
+    if (RegisterHotKey(nullptr, HOTKEY_ID, MOD_CONTROL | MOD_ALT, 'U')) {
+        qDebug() << "Global shortcut Ctrl+Alt+U registered successfully";
+    } else {
+        qDebug() << "Failed to register global shortcut Ctrl+Alt+U";
+    }
+#else
+    // Fallback to QShortcut on non-Windows platforms
+    m_globalShortcut = new QShortcut(QKeySequence("Ctrl+Alt+U"), qApp);
+    connect(m_globalShortcut, &QShortcut::activated, this, &UIAListIcon::activate);
+    qDebug() << "QShortcut Ctrl+Alt+U registered (application focus required)";
+#endif
+}
+
+void UIAListIcon::unregisterGlobalShortcut()
+{
+#ifdef _WIN32
+    UnregisterHotKey(nullptr, HOTKEY_ID);
+    qApp->removeNativeEventFilter(this);
+    qDebug() << "Global shortcut unregistered";
+#else
+    if (m_globalShortcut) {
+        delete m_globalShortcut;
+        m_globalShortcut = nullptr;
+    }
+#endif
+}
+
+#ifdef _WIN32
+bool UIAListIcon::nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result)
+{
+    Q_UNUSED(result)
+    
+    if (eventType == "windows_generic_MSG") {
+        MSG *msg = static_cast<MSG*>(message);
+        if (msg->message == WM_HOTKEY && msg->wParam == HOTKEY_ID) {
+            qDebug() << "Global hotkey Ctrl+Alt+U activated";
+            activate();
+            return true;
+        }
+    }
+    
+    return false;
+}
+#endif
