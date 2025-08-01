@@ -8,6 +8,7 @@
 #include <QCheckBox>
 #include <QMap>
 #include <QString>
+#include <QKeyEvent>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -63,6 +64,9 @@ private slots:
     void onItemSelectionChanged();
     void onHideEmptyTitlesChanged(bool checked);
 
+protected:
+    bool eventFilter(QObject *obj, QEvent *event) override;
+
 private:
     void setupUI();
     void initializeUIAutomation();
@@ -71,6 +75,8 @@ private:
     QString getControlTypeString(CONTROLTYPEID controlType);
     void populateListWidget();
     void cleanupUIAutomation();
+    void selectVisibleListItem(int direction);
+    void announceSelectedItem(const QString& text);
 
     UIAListIcon *m_trayIcon;
     

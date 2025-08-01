@@ -3,6 +3,8 @@
 #include <QDebug>
 #include <QListWidgetItem>
 #include <QVariant>
+#include <QKeyEvent>
+#include <QAccessible>
 
 #ifdef _WIN32
 #include <comdef.h>
@@ -41,6 +43,7 @@ void UIAList::setupUI()
     m_filterEdit = new QLineEdit(this);
     m_filterEdit->setPlaceholderText("Filter controls...");
     connect(m_filterEdit, &QLineEdit::textChanged, this, &UIAList::onFilterChanged);
+    m_filterEdit->installEventFilter(this);
     
     // List widget
     m_listWidget = new QListWidget(this);
@@ -293,5 +296,88 @@ void UIAList::cleanupUIAutomation()
     }
     
     CoUninitialize();
+#endif
+}
+
+bool UIAList::eventFilter(QObject *obj, QEvent *event)
+{
+    if (obj == m_filterEdit && event->type() == QEvent::KeyPress) {
+        QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
+        
+        if (keyEvent->key() == Qt::Key_Up) {
+            selectVisibleListItem(-1);
+            return true; // Suppress default behavior
+        } else if (keyEvent->key() == Qt::Key_Down) {
+            selectVisibleListItem(1);
+            return true; // Suppress default behavior
+        }
+    }
+    
+    return QMainWindow::eventFilter(obj, event);
+}
+
+void UIAList::selectVisibleListItem(int direction)
+{
+    if (!m_listWidget || m_listWidget->count() == 0) {
+        return;
+    }
+    
+    int currentRow = m_listWidget->currentRow();
+    int newRow = currentRow;
+    
+    // Find the next visible item in the specified direction
+    for (int i = 0; i < m_listWidget->count(); ++i) {
+        int candidateRow = currentRow + (direction * (i + 1));
+        
+        // Wrap around if needed
+        if (candidateRow < 0) {
+            candidateRow = m_listWidget->count() - 1;
+        } else if (candidateRow >= m_listWidget->count()) {
+            candidateRow = 0;
+        }
+        
+        QListWidgetItem *item = m_listWidget->item(candidateRow);
+        if (item && !item->isHidden()) {
+            newRow = candidateRow;
+            break;
+        }
+    }
+    
+    // If no visible item found and we don't have a current selection, select the first visible item
+    if (currentRow == -1) {
+        for (int i = 0; i < m_listWidget->count(); ++i) {
+            QListWidgetItem *item = m_listWidget->item(i);
+            if (item && !item->isHidden()) {
+                newRow = i;
+                break;
+            }
+        }
+    }
+    
+    if (newRow != currentRow && newRow >= 0) {
+        m_listWidget->setCurrentRow(newRow);
+        QListWidgetItem *selectedItem = m_listWidget->item(newRow);
+        if (selectedItem) {
+            announceSelectedItem(selectedItem->text());
+        }
+    }
+}
+
+void UIAList::announceSelectedItem(const QString& text)
+{
+    // Use QAccessible to announce the selected item to screen readers
+    if (m_listWidget && m_listWidget->currentItem()) {
+        QAccessibleEvent event(m_listWidget, QAccessible::Selection);
+        QAccessible::updateAccessibility(&event);
+        
+        // Also send a focus event to ensure screen readers announce the text
+        QAccessibleEvent focusEvent(m_listWidget, QAccessible::Focus);
+        QAccessible::updateAccessibility(&focusEvent);
+    }
+    
+    // Also announce using Windows SAPI if available
+#ifdef _WIN32
+    // This would require additional Windows-specific screen reader announcement code
+    // For now, we rely on Qt's accessibility framework
 #endif
 }
