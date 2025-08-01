@@ -5,6 +5,7 @@
 #include <QVariant>
 #include <QKeyEvent>
 #include <QAccessible>
+#include <QRegularExpression>
 
 #ifdef _WIN32
 #include <comdef.h>
@@ -285,9 +286,25 @@ void UIAList::populateListWidget()
 
 void UIAList::onFilterChanged(const QString& text)
 {
+    // Split filter text into individual words
+    QStringList filterWords = text.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
+    
     for (int i = 0; i < m_listWidget->count(); ++i) {
         QListWidgetItem* item = m_listWidget->item(i);
-        bool visible = text.isEmpty() || item->text().contains(text, Qt::CaseInsensitive);
+        bool visible = true;
+        
+        if (!filterWords.isEmpty()) {
+            QString itemText = item->text();
+            
+            // Check if all filter words are present in the item text (case insensitive)
+            for (const QString& word : filterWords) {
+                if (!itemText.contains(word, Qt::CaseInsensitive)) {
+                    visible = false;
+                    break;
+                }
+            }
+        }
+        
         item->setHidden(!visible);
     }
     
