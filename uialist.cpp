@@ -13,8 +13,9 @@
 
 UIAList::UIAList(QWidget *parent)
     : QMainWindow(parent), m_trayIcon(nullptr), m_centralWidget(nullptr), 
-      m_layout(nullptr), m_filterEdit(nullptr), m_listWidget(nullptr),
-      m_hideEmptyTitlesCheckBox(nullptr), m_uiAutomation(nullptr), m_controlViewWalker(nullptr)
+      m_layout(nullptr), m_buttonLayout(nullptr), m_filterEdit(nullptr), m_listWidget(nullptr),
+      m_hideEmptyTitlesCheckBox(nullptr), m_clickButton(nullptr), m_focusButton(nullptr), 
+      m_doubleClickButton(nullptr), m_uiAutomation(nullptr), m_controlViewWalker(nullptr)
 {
     setupUI();
     initializeUIAutomation();
@@ -54,9 +55,27 @@ void UIAList::setupUI()
     m_hideEmptyTitlesCheckBox->setChecked(true); // Enabled by default
     connect(m_hideEmptyTitlesCheckBox, &QCheckBox::toggled, this, &UIAList::onHideEmptyTitlesChanged);
     
+    // Buttons layout
+    m_buttonLayout = new QHBoxLayout();
+    
+    // Double Click, Click, and Focus buttons with accelerator keys (reordered)
+    m_doubleClickButton = new QPushButton("&Double Click", this);
+    m_clickButton = new QPushButton("&Click", this);
+    m_focusButton = new QPushButton("&Focus", this);
+    
+    connect(m_clickButton, &QPushButton::clicked, this, &UIAList::onClickButtonClicked);
+    connect(m_focusButton, &QPushButton::clicked, this, &UIAList::onFocusButtonClicked);
+    connect(m_doubleClickButton, &QPushButton::clicked, this, &UIAList::onDoubleClickButtonClicked);
+    
+    m_buttonLayout->addWidget(m_doubleClickButton);
+    m_buttonLayout->addWidget(m_clickButton);
+    m_buttonLayout->addWidget(m_focusButton);
+    m_buttonLayout->addStretch(); // Add stretch to push buttons to the left
+    
     m_layout->addWidget(m_filterEdit);
     m_layout->addWidget(m_listWidget);
     m_layout->addWidget(m_hideEmptyTitlesCheckBox);
+    m_layout->addLayout(m_buttonLayout);
     
     setWindowTitle("UI Automation List");
     resize(600, 400);
@@ -247,6 +266,8 @@ void UIAList::populateListWidget()
         item->setData(Qt::UserRole, i); // Store index to m_allControls
         m_listWidget->addItem(item);
     }
+    
+    updateButtonStates();
 }
 
 void UIAList::onFilterChanged(const QString& text)
@@ -256,6 +277,8 @@ void UIAList::onFilterChanged(const QString& text)
         bool visible = text.isEmpty() || item->text().contains(text, Qt::CaseInsensitive);
         item->setHidden(!visible);
     }
+    
+    updateButtonStates();
 }
 
 void UIAList::onItemSelectionChanged()
@@ -309,6 +332,11 @@ bool UIAList::eventFilter(QObject *obj, QEvent *event)
             return true; // Suppress default behavior
         } else if (keyEvent->key() == Qt::Key_Down) {
             selectVisibleListItem(1);
+            return true; // Suppress default behavior
+        } else if (keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter) {
+            ensureItemSelected();
+            clickSelectedControl();
+            hide();
             return true; // Suppress default behavior
         }
     }
@@ -380,4 +408,357 @@ void UIAList::announceSelectedItem(const QString& text)
     // This would require additional Windows-specific screen reader announcement code
     // For now, we rely on Qt's accessibility framework
 #endif
+}
+
+void UIAList::keyPressEvent(QKeyEvent *event)
+{
+    if (event->key() == Qt::Key_Escape) {
+        hide();
+        return;
+    }
+    
+    QMainWindow::keyPressEvent(event);
+}
+
+void UIAList::focusOutEvent(QFocusEvent *event)
+{
+    Q_UNUSED(event)
+    // Close window when it loses focus
+    hide();
+}
+
+void UIAList::onClickButtonClicked()
+{
+    ensureItemSelected();
+    clickSelectedControl();
+    hide();
+}
+
+void UIAList::onFocusButtonClicked()
+{
+    ensureItemSelected();
+    focusSelectedControl();
+    hide();
+}
+
+void UIAList::onDoubleClickButtonClicked()
+{
+    ensureItemSelected();
+    doubleClickSelectedControl();
+    hide();
+}
+
+void UIAList::clickSelectedControl()
+{
+#ifdef _WIN32
+    QList<QListWidgetItem*> selectedItems = m_listWidget->selectedItems();
+    if (selectedItems.isEmpty()) {
+        qDebug() << "No control selected";
+        return;
+    }
+    
+    QListWidgetItem* selectedItem = selectedItems.first();
+    int index = selectedItem->data(Qt::UserRole).toInt();
+    
+    if (index >= 0 && index < m_allControls.size()) {
+        const ControlInfo& controlInfo = m_allControls[index];
+        IUIAutomationElement* element = controlInfo.element;
+        
+        if (element) {
+            qDebug() << "Attempting to click control:" << controlInfo.displayText;
+            
+            // Method 1: Try to get bounding rectangle and simulate mouse click
+            RECT rect;
+            HRESULT hr = element->get_CurrentBoundingRectangle(&rect);
+            if (SUCCEEDED(hr)) {
+                int x = rect.left + (rect.right - rect.left) / 2;
+                int y = rect.top + (rect.bottom - rect.top) / 2;
+                
+                qDebug() << "Attempting mouse click at coordinates:" << x << "," << y;
+                
+                // Use Windows API to simulate mouse click
+                SetCursorPos(x, y);
+                Sleep(50); // Small delay for stability
+                mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+                mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+                
+                qDebug() << "Successfully clicked control via mouse simulation:" << controlInfo.displayText;
+                return;
+            }
+            
+            // Method 2: Try to invoke the element (for buttons, etc.)
+            IUIAutomationInvokePattern* invokePattern = nullptr;
+            hr = element->GetCurrentPatternAs(UIA_InvokePatternId, __uuidof(IUIAutomationInvokePattern), (void**)&invokePattern);
+            
+            if (SUCCEEDED(hr) && invokePattern) {
+                qDebug() << "Trying invoke pattern";
+                hr = invokePattern->Invoke();
+                invokePattern->Release();
+                if (SUCCEEDED(hr)) {
+                    qDebug() << "Successfully invoked control:" << controlInfo.displayText;
+                    return;
+                } else {
+                    qDebug() << "Invoke pattern failed with HRESULT:" << hr;
+                }
+            }
+            
+            // Method 3: Try legacy action (for older controls)
+            IUIAutomationLegacyIAccessiblePattern* legacyPattern = nullptr;
+            hr = element->GetCurrentPatternAs(UIA_LegacyIAccessiblePatternId, __uuidof(IUIAutomationLegacyIAccessiblePattern), (void**)&legacyPattern);
+            
+            if (SUCCEEDED(hr) && legacyPattern) {
+                qDebug() << "Trying legacy accessible pattern";
+                hr = legacyPattern->DoDefaultAction();
+                legacyPattern->Release();
+                if (SUCCEEDED(hr)) {
+                    qDebug() << "Successfully clicked control via legacy pattern:" << controlInfo.displayText;
+                    return;
+                } else {
+                    qDebug() << "Legacy pattern failed with HRESULT:" << hr;
+                }
+            }
+            
+            // Method 4: Try selection pattern for list items
+            IUIAutomationSelectionItemPattern* selectionPattern = nullptr;
+            hr = element->GetCurrentPatternAs(UIA_SelectionItemPatternId, __uuidof(IUIAutomationSelectionItemPattern), (void**)&selectionPattern);
+            
+            if (SUCCEEDED(hr) && selectionPattern) {
+                qDebug() << "Trying selection item pattern";
+                hr = selectionPattern->Select();
+                selectionPattern->Release();
+                if (SUCCEEDED(hr)) {
+                    qDebug() << "Successfully selected control:" << controlInfo.displayText;
+                    return;
+                } else {
+                    qDebug() << "Selection pattern failed with HRESULT:" << hr;
+                }
+            }
+            
+            qDebug() << "All click methods failed for control:" << controlInfo.displayText;
+        }
+    }
+#endif
+}
+
+void UIAList::focusSelectedControl()
+{
+#ifdef _WIN32
+    QList<QListWidgetItem*> selectedItems = m_listWidget->selectedItems();
+    if (selectedItems.isEmpty()) {
+        qDebug() << "No control selected";
+        return;
+    }
+    
+    QListWidgetItem* selectedItem = selectedItems.first();
+    int index = selectedItem->data(Qt::UserRole).toInt();
+    
+    if (index >= 0 && index < m_allControls.size()) {
+        const ControlInfo& controlInfo = m_allControls[index];
+        IUIAutomationElement* element = controlInfo.element;
+        
+        if (element) {
+            qDebug() << "Attempting to focus control:" << controlInfo.displayText;
+            
+            // Method 1: Use UI Automation SetFocus
+            HRESULT hr = element->SetFocus();
+            if (SUCCEEDED(hr)) {
+                qDebug() << "Successfully focused control via SetFocus:" << controlInfo.displayText;
+                return;
+            } else {
+                qDebug() << "SetFocus failed with HRESULT:" << hr;
+            }
+            
+            // Method 2: Try to get bounding rectangle and click to focus
+            RECT rect;
+            hr = element->get_CurrentBoundingRectangle(&rect);
+            if (SUCCEEDED(hr)) {
+                int x = rect.left + (rect.right - rect.left) / 2;
+                int y = rect.top + (rect.bottom - rect.top) / 2;
+                
+                qDebug() << "Attempting focus via mouse click at coordinates:" << x << "," << y;
+                
+                // Click on the control to give it focus
+                SetCursorPos(x, y);
+                Sleep(50);
+                mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+                mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+                
+                qDebug() << "Successfully focused control via mouse click:" << controlInfo.displayText;
+                return;
+            }
+            
+            // Method 3: Try to use keyboard navigation to focus (Tab key simulation)
+            qDebug() << "Trying keyboard Tab navigation to focus";
+            
+            // Get current focused element to compare
+            IUIAutomationElement* currentFocus = nullptr;
+            m_uiAutomation->GetFocusedElement(&currentFocus);
+            
+            // Send Tab key to try to navigate to the control
+            // This is a simplified approach - in practice you'd need more sophisticated navigation
+            keybd_event(VK_TAB, 0, 0, 0);
+            keybd_event(VK_TAB, 0, KEYEVENTF_KEYUP, 0);
+            
+            Sleep(100); // Give time for focus to change
+            
+            IUIAutomationElement* newFocus = nullptr;
+            m_uiAutomation->GetFocusedElement(&newFocus);
+            
+            if (currentFocus) currentFocus->Release();
+            if (newFocus) {
+                qDebug() << "Tab navigation attempted";
+                newFocus->Release();
+            }
+            
+            qDebug() << "All focus methods failed for control:" << controlInfo.displayText;
+        }
+    }
+#endif
+}
+
+void UIAList::doubleClickSelectedControl()
+{
+#ifdef _WIN32
+    QList<QListWidgetItem*> selectedItems = m_listWidget->selectedItems();
+    if (selectedItems.isEmpty()) {
+        qDebug() << "No control selected";
+        return;
+    }
+    
+    QListWidgetItem* selectedItem = selectedItems.first();
+    int index = selectedItem->data(Qt::UserRole).toInt();
+    
+    if (index >= 0 && index < m_allControls.size()) {
+        const ControlInfo& controlInfo = m_allControls[index];
+        IUIAutomationElement* element = controlInfo.element;
+        
+        if (element) {
+            qDebug() << "Attempting to double-click control:" << controlInfo.displayText;
+            
+            // Method 1: Try to get bounding rectangle and simulate mouse double-click
+            RECT rect;
+            HRESULT hr = element->get_CurrentBoundingRectangle(&rect);
+            if (SUCCEEDED(hr)) {
+                int x = rect.left + (rect.right - rect.left) / 2;
+                int y = rect.top + (rect.bottom - rect.top) / 2;
+                
+                qDebug() << "Attempting mouse double-click at coordinates:" << x << "," << y;
+                
+                // Use Windows API to simulate mouse double-click
+                SetCursorPos(x, y);
+                Sleep(50);
+                mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+                mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+                Sleep(50); // Brief pause between clicks
+                mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+                mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+                
+                qDebug() << "Successfully double-clicked control via mouse simulation:" << controlInfo.displayText;
+                return;
+            }
+            
+            // Method 2: For double click, we can use the Toggle pattern for checkboxes/radio buttons
+            IUIAutomationTogglePattern* togglePattern = nullptr;
+            hr = element->GetCurrentPatternAs(UIA_TogglePatternId, __uuidof(IUIAutomationTogglePattern), (void**)&togglePattern);
+            
+            if (SUCCEEDED(hr) && togglePattern) {
+                qDebug() << "Trying toggle pattern";
+                hr = togglePattern->Toggle();
+                togglePattern->Release();
+                if (SUCCEEDED(hr)) {
+                    qDebug() << "Successfully toggled control:" << controlInfo.displayText;
+                    return;
+                } else {
+                    qDebug() << "Toggle pattern failed with HRESULT:" << hr;
+                }
+            }
+            
+            // Method 3: Try double click via legacy pattern
+            IUIAutomationLegacyIAccessiblePattern* legacyPattern = nullptr;
+            hr = element->GetCurrentPatternAs(UIA_LegacyIAccessiblePatternId, __uuidof(IUIAutomationLegacyIAccessiblePattern), (void**)&legacyPattern);
+            
+            if (SUCCEEDED(hr) && legacyPattern) {
+                qDebug() << "Trying legacy accessible double-click";
+                // Simulate double click by calling DoDefaultAction twice
+                hr = legacyPattern->DoDefaultAction();
+                if (SUCCEEDED(hr)) {
+                    Sleep(50);
+                    legacyPattern->DoDefaultAction();
+                }
+                legacyPattern->Release();
+                if (SUCCEEDED(hr)) {
+                    qDebug() << "Successfully double-clicked control via legacy pattern:" << controlInfo.displayText;
+                    return;
+                } else {
+                    qDebug() << "Legacy double-click failed with HRESULT:" << hr;
+                }
+            }
+            
+            // Method 4: Fallback - try regular invoke pattern twice
+            IUIAutomationInvokePattern* invokePattern = nullptr;
+            hr = element->GetCurrentPatternAs(UIA_InvokePatternId, __uuidof(IUIAutomationInvokePattern), (void**)&invokePattern);
+            
+            if (SUCCEEDED(hr) && invokePattern) {
+                qDebug() << "Trying double invoke pattern";
+                hr = invokePattern->Invoke();
+                if (SUCCEEDED(hr)) {
+                    Sleep(50);
+                    invokePattern->Invoke(); // Second invoke for double click
+                }
+                invokePattern->Release();
+                if (SUCCEEDED(hr)) {
+                    qDebug() << "Successfully double-invoked control:" << controlInfo.displayText;
+                    return;
+                } else {
+                    qDebug() << "Double invoke failed with HRESULT:" << hr;
+                }
+            }
+            
+            qDebug() << "All double-click methods failed for control:" << controlInfo.displayText;
+        }
+    }
+#endif
+}
+
+void UIAList::ensureItemSelected()
+{
+    if (!m_listWidget || m_listWidget->count() == 0) {
+        return;
+    }
+    
+    // If no item is selected, select the first visible item
+    if (m_listWidget->currentRow() == -1) {
+        for (int i = 0; i < m_listWidget->count(); ++i) {
+            QListWidgetItem* item = m_listWidget->item(i);
+            if (item && !item->isHidden()) {
+                m_listWidget->setCurrentRow(i);
+                QListWidgetItem *selectedItem = m_listWidget->item(i);
+                if (selectedItem) {
+                    announceSelectedItem(selectedItem->text());
+                }
+                break;
+            }
+        }
+    }
+}
+
+void UIAList::updateButtonStates()
+{
+    // Check if there are any visible items in the list
+    bool hasVisibleItems = false;
+    
+    if (m_listWidget) {
+        for (int i = 0; i < m_listWidget->count(); ++i) {
+            QListWidgetItem* item = m_listWidget->item(i);
+            if (item && !item->isHidden()) {
+                hasVisibleItems = true;
+                break;
+            }
+        }
+    }
+    
+    // Enable/disable buttons based on whether there are visible items
+    if (m_clickButton) m_clickButton->setEnabled(hasVisibleItems);
+    if (m_focusButton) m_focusButton->setEnabled(hasVisibleItems);
+    if (m_doubleClickButton) m_doubleClickButton->setEnabled(hasVisibleItems);
 }

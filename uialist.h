@@ -3,12 +3,15 @@
 
 #include <QMainWindow>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QLineEdit>
 #include <QListWidget>
 #include <QCheckBox>
+#include <QPushButton>
 #include <QMap>
 #include <QString>
 #include <QKeyEvent>
+#include <QFocusEvent>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -63,9 +66,14 @@ private slots:
     void onFilterChanged(const QString& text);
     void onItemSelectionChanged();
     void onHideEmptyTitlesChanged(bool checked);
+    void onClickButtonClicked();
+    void onFocusButtonClicked();
+    void onDoubleClickButtonClicked();
 
 protected:
     bool eventFilter(QObject *obj, QEvent *event) override;
+    void keyPressEvent(QKeyEvent *event) override;
+    void focusOutEvent(QFocusEvent *event) override;
 
 private:
     void setupUI();
@@ -77,15 +85,24 @@ private:
     void cleanupUIAutomation();
     void selectVisibleListItem(int direction);
     void announceSelectedItem(const QString& text);
+    void clickSelectedControl();
+    void focusSelectedControl();
+    void doubleClickSelectedControl();
+    void ensureItemSelected();
+    void updateButtonStates();
 
     UIAListIcon *m_trayIcon;
     
     // UI Components
     QWidget *m_centralWidget;
     QVBoxLayout *m_layout;
+    QHBoxLayout *m_buttonLayout;
     QLineEdit *m_filterEdit;
     QListWidget *m_listWidget;
     QCheckBox *m_hideEmptyTitlesCheckBox;
+    QPushButton *m_clickButton;
+    QPushButton *m_focusButton;
+    QPushButton *m_doubleClickButton;
     
     // UI Automation
     IUIAutomation *m_uiAutomation;
