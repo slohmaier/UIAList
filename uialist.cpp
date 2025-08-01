@@ -113,6 +113,10 @@ void UIAList::showWindow(void* foregroundWindow)
     raise();
     activateWindow();
     
+    // Clear filter and set focus to filter edit box
+    m_filterEdit->clear();
+    m_filterEdit->setFocus();
+    
     // Enumerate controls of the passed foreground window
     enumerateControls(foregroundWindow);
 }
@@ -267,6 +271,15 @@ void UIAList::populateListWidget()
         m_listWidget->addItem(item);
     }
     
+    // Auto-select the first item if none is selected
+    if (m_listWidget->count() > 0 && m_listWidget->currentRow() == -1) {
+        m_listWidget->setCurrentRow(0);
+        QListWidgetItem* firstItem = m_listWidget->item(0);
+        if (firstItem) {
+            announceSelectedItem(firstItem->text());
+        }
+    }
+    
     updateButtonStates();
 }
 
@@ -276,6 +289,33 @@ void UIAList::onFilterChanged(const QString& text)
         QListWidgetItem* item = m_listWidget->item(i);
         bool visible = text.isEmpty() || item->text().contains(text, Qt::CaseInsensitive);
         item->setHidden(!visible);
+    }
+    
+    // If no item is currently selected, select the first visible item
+    if (m_listWidget->currentRow() == -1) {
+        for (int i = 0; i < m_listWidget->count(); ++i) {
+            QListWidgetItem* item = m_listWidget->item(i);
+            if (item && !item->isHidden()) {
+                m_listWidget->setCurrentRow(i);
+                announceSelectedItem(item->text());
+                break;
+            }
+        }
+    } else {
+        // Check if the currently selected item is still visible
+        QListWidgetItem* currentItem = m_listWidget->currentItem();
+        if (currentItem && currentItem->isHidden()) {
+            // Current item is hidden, select the first visible item
+            m_listWidget->setCurrentRow(-1); // Clear selection first
+            for (int i = 0; i < m_listWidget->count(); ++i) {
+                QListWidgetItem* item = m_listWidget->item(i);
+                if (item && !item->isHidden()) {
+                    m_listWidget->setCurrentRow(i);
+                    announceSelectedItem(item->text());
+                    break;
+                }
+            }
+        }
     }
     
     updateButtonStates();
