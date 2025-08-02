@@ -96,12 +96,68 @@ if (-not $SkipBuild) {
             throw "Build failed"
         }
         
-        # Install to staging area
-        $stagingDir = Join-Path $PSScriptRoot $OutputDir "staging"
-        Write-Host "Installing to staging area: $stagingDir" -ForegroundColor $Cyan
-        & cmake --install . --config $Configuration --prefix $stagingDir
-        if ($LASTEXITCODE -ne 0) {
-            throw "Install failed"
+        # Manual file copying to staging area (more reliable than CMake install)
+        $stagingDir = Join-Path (Join-Path $PSScriptRoot $OutputDir) "staging"
+        Write-Host "Copying files to staging area: $stagingDir" -ForegroundColor $Cyan
+        
+        # Create staging directory
+        New-Item -ItemType Directory -Path $stagingDir -Force | Out-Null
+        
+        # Copy the main executable
+        $exePath = Join-Path $Configuration "UIAList.exe"
+        if (Test-Path $exePath) {
+            Copy-Item $exePath $stagingDir -Force
+            Write-Host "Copied UIAList.exe" -ForegroundColor $Cyan
+        } else {
+            throw "UIAList.exe not found at $exePath"
+        }
+        
+        # Use windeployqt to copy Qt dependencies
+        $qtBinDir = $null
+        if ($qtDir) {
+            $qtBinDir = Join-Path $qtDir "bin"
+            if (-not (Test-Path $qtBinDir)) {
+                # Try alternative Qt directory structures
+                $qtBinDir = Join-Path $qtDir ".." ".." ".." "bin"
+            }
+        }
+        
+        if ($qtBinDir -and (Test-Path $qtBinDir)) {
+            $windeployqt = Join-Path $qtBinDir "windeployqt.exe"
+            if (Test-Path $windeployqt) {
+                Write-Host "Running windeployqt..." -ForegroundColor $Cyan
+                $targetExe = Join-Path $stagingDir "UIAList.exe"
+                & "$windeployqt" "$targetExe" --release --no-translations --no-system-d3d-compiler --no-opengl-sw --dir "$stagingDir"
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Host "windeployqt failed, but continuing..." -ForegroundColor $Yellow
+                }
+            } else {
+                Write-Host "windeployqt not found, manual Qt deployment needed" -ForegroundColor $Yellow
+            }
+        } else {
+            Write-Host "Qt bin directory not found, manual Qt deployment needed" -ForegroundColor $Yellow
+        }
+        
+        # Copy Package.appxmanifest and Assets from project root
+        $manifestSource = Join-Path $PSScriptRoot "Package.appxmanifest"
+        $manifestTarget = Join-Path $stagingDir "AppxManifest.xml"
+        Copy-Item $manifestSource $manifestTarget -Force
+        Write-Host "Copied Package.appxmanifest as AppxManifest.xml" -ForegroundColor $Cyan
+        
+        $assetsSource = Join-Path $PSScriptRoot "Assets"
+        $assetsTarget = Join-Path $stagingDir "Assets"
+        if (Test-Path $assetsSource) {
+            Copy-Item $assetsSource $assetsTarget -Recurse -Force
+            Write-Host "Copied Assets directory" -ForegroundColor $Cyan
+        } else {
+            Write-Host "Warning: Assets directory not found" -ForegroundColor $Yellow
+        }
+        
+        # Copy PrivacyPolicy.html if it exists
+        $privacyPolicy = Join-Path $PSScriptRoot "PrivacyPolicy.html"
+        if (Test-Path $privacyPolicy) {
+            Copy-Item $privacyPolicy $stagingDir -Force
+            Write-Host "Copied PrivacyPolicy.html" -ForegroundColor $Cyan
         }
         
     } catch {
