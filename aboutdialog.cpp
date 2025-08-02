@@ -1,0 +1,142 @@
+/*
+ * UIAList - UI Automation Control Browser
+ * Copyright (C) 2025 Stefan Lohmaier
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+#include "aboutdialog.h"
+#include <QDesktopServices>
+#include <QUrl>
+#include <QApplication>
+#include <QIcon>
+
+AboutDialog::AboutDialog(QWidget *parent)
+    : QDialog(parent), m_mainLayout(nullptr), m_iconLayout(nullptr), 
+      m_iconLabel(nullptr), m_titleLabel(nullptr), m_versionLabel(nullptr),
+      m_descriptionText(nullptr), m_copyrightLabel(nullptr), 
+      m_githubButton(nullptr), m_closeButton(nullptr), m_buttonLayout(nullptr)
+{
+    setupUI();
+    setWindowTitle("About UIAList");
+    setFixedSize(500, 400);
+    setModal(true);
+}
+
+void AboutDialog::setupUI()
+{
+    m_mainLayout = new QVBoxLayout(this);
+    m_mainLayout->setSpacing(15);
+    m_mainLayout->setContentsMargins(20, 20, 20, 20);
+    
+    // Icon and title section
+    m_iconLayout = new QHBoxLayout();
+    
+    // Load and display the icon
+    m_iconLabel = new QLabel();
+    QIcon appIcon(":/icons/uialist_icon.png");
+    if (!appIcon.isNull()) {
+        QPixmap iconPixmap = appIcon.pixmap(64, 64);
+        m_iconLabel->setPixmap(iconPixmap);
+    } else {
+        m_iconLabel->setText("[Icon]");
+        m_iconLabel->setStyleSheet("border: 1px solid gray; padding: 20px;");
+    }
+    m_iconLabel->setAlignment(Qt::AlignCenter);
+    m_iconLabel->setFixedSize(80, 80);
+    
+    // Title and version
+    QVBoxLayout *titleLayout = new QVBoxLayout();
+    
+    m_titleLabel = new QLabel("UIAList");
+    m_titleLabel->setStyleSheet("QLabel { font-size: 24px; font-weight: bold; color: palette(text); }");
+    
+    m_versionLabel = new QLabel("UI Automation Control Browser");
+    m_versionLabel->setStyleSheet("QLabel { font-size: 14px; color: palette(disabled-text); font-style: italic; }");
+    
+    titleLayout->addWidget(m_titleLabel);
+    titleLayout->addWidget(m_versionLabel);
+    titleLayout->addStretch();
+    
+    m_iconLayout->addWidget(m_iconLabel);
+    m_iconLayout->addSpacing(15);
+    m_iconLayout->addLayout(titleLayout);
+    m_iconLayout->addStretch();
+    
+    // Description
+    m_descriptionText = new QTextBrowser();
+    m_descriptionText->setFrameStyle(QFrame::NoFrame);
+    m_descriptionText->setStyleSheet("QTextBrowser { background: transparent; border: none; }");
+    m_descriptionText->setOpenExternalLinks(false);
+    m_descriptionText->setMaximumHeight(150);
+    
+    QString description = 
+        "<p><b>UIAList</b> is a specialized accessibility tool designed for blind and visually impaired users utilizing screen readers such as JAWS, NVDA, or Windows Narrator.</p>"
+        "<p>This application provides rapid navigation and interaction with UI controls within the currently active window through comprehensive UI Automation integration.</p>"
+        "<p><b>Key Features:</b></p>"
+        "<ul>"
+        "<li>Real-time UI Control Enumeration</li>"
+        "<li>Advanced Filtering System</li>"
+        "<li>Multi-Modal Control Interaction</li>"
+        "<li>Screen Reader Optimized</li>"
+        "</ul>";
+    
+    m_descriptionText->setHtml(description);
+    
+    // Copyright and license
+    m_copyrightLabel = new QLabel();
+    m_copyrightLabel->setWordWrap(true);
+    m_copyrightLabel->setStyleSheet("QLabel { font-size: 12px; padding: 10px; border-radius: 5px; background-color: palette(alternate-base); color: palette(text); }");
+    
+    QString copyrightText = 
+        "Copyright © 2025 Stefan Lohmaier. All rights reserved.\n\n"
+        "This program is free software: you can redistribute it and/or modify "
+        "it under the terms of the GNU General Public License as published by "
+        "the Free Software Foundation, either version 3 of the License, or "
+        "(at your option) any later version.\n\n"
+        "This program is distributed in the hope that it will be useful, "
+        "but WITHOUT ANY WARRANTY; without even the implied warranty of "
+        "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the "
+        "GNU General Public License for more details.\n\n"
+        "THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.";
+    
+    m_copyrightLabel->setText(copyrightText);
+    
+    // Buttons
+    m_buttonLayout = new QHBoxLayout();
+    
+    m_githubButton = new QPushButton("Visit GitHub Repository");
+    m_githubButton->setStyleSheet("QPushButton { padding: 8px 16px; border-radius: 4px; font-weight: bold; }");
+    connect(m_githubButton, &QPushButton::clicked, this, &AboutDialog::openGitHubPage);
+    
+    m_closeButton = new QPushButton("Close");
+    m_closeButton->setStyleSheet("QPushButton { padding: 8px 16px; border-radius: 4px; font-weight: bold; }");
+    connect(m_closeButton, &QPushButton::clicked, this, &QDialog::accept);
+    
+    m_buttonLayout->addWidget(m_githubButton);
+    m_buttonLayout->addStretch();
+    m_buttonLayout->addWidget(m_closeButton);
+    
+    // Add all components to main layout
+    m_mainLayout->addLayout(m_iconLayout);
+    m_mainLayout->addWidget(m_descriptionText);
+    m_mainLayout->addWidget(m_copyrightLabel);
+    m_mainLayout->addStretch();
+    m_mainLayout->addLayout(m_buttonLayout);
+}
+
+void AboutDialog::openGitHubPage()
+{
+    QDesktopServices::openUrl(QUrl("https://github.com/slohmaier/UIAList"));
+}

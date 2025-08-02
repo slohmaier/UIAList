@@ -41,6 +41,8 @@ set(PROJECT_SOURCES
         uialist.h
         uialisticon.cpp
         uialisticon.h
+        aboutdialog.cpp
+        aboutdialog.h
         ${RESOURCE_FILES}
         ${TS_FILES}
 )

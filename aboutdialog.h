@@ -16,28 +16,40 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "uialist.h"
+#ifndef ABOUTDIALOG_H
+#define ABOUTDIALOG_H
 
-#include <QApplication>
-#include <QLocale>
-#include <QTranslator>
+#include <QDialog>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QPushButton>
+#include <QPixmap>
+#include <QTextBrowser>
 
-int main(int argc, char *argv[])
+class AboutDialog : public QDialog
 {
-    QApplication a(argc, argv);
-    a.setQuitOnLastWindowClosed(false);
+    Q_OBJECT
 
-    QTranslator translator;
-    const QStringList uiLanguages = QLocale::system().uiLanguages();
-    for (const QString &locale : uiLanguages) {
-        const QString baseName = "UIAList_" + QLocale(locale).name();
-        if (translator.load(":/i18n/" + baseName)) {
-            a.installTranslator(&translator);
-            break;
-        }
-    }
-    UIAList w;
-    // Don't show window initially - only show tray icon
-    // Window will be shown when Activate action is triggered
-    return a.exec();
-}
+public:
+    explicit AboutDialog(QWidget *parent = nullptr);
+
+private slots:
+    void openGitHubPage();
+
+private:
+    void setupUI();
+    
+    QVBoxLayout *m_mainLayout;
+    QHBoxLayout *m_iconLayout;
+    QLabel *m_iconLabel;
+    QLabel *m_titleLabel;
+    QLabel *m_versionLabel;
+    QTextBrowser *m_descriptionText;
+    QLabel *m_copyrightLabel;
+    QPushButton *m_githubButton;
+    QPushButton *m_closeButton;
+    QHBoxLayout *m_buttonLayout;
+};
+
+#endif // ABOUTDIALOG_H
