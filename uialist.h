@@ -31,11 +31,9 @@
 #include <QKeyEvent>
 #include <QFocusEvent>
 
-#ifdef _WIN32
 #include <windows.h>
 #include <uiautomation.h>
 #include <comdef.h>
-#endif
 
 class UIAListIcon;
 

@@ -24,15 +24,9 @@
 #include <QMenu>
 #include <QAction>
 
-#ifdef _WIN32
 #include <QAbstractNativeEventFilter>
-#endif
 
-#ifdef _WIN32
 class UIAListIcon : public QObject, public QAbstractNativeEventFilter
-#else
-class UIAListIcon : public QObject
-#endif
 {
     Q_OBJECT
 
@@ -52,9 +46,7 @@ private slots:
     void quit();
 
 protected:
-#ifdef _WIN32
     bool nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result) override;
-#endif
 
 private:
     void createContextMenu();
@@ -66,11 +58,7 @@ private:
     QAction *m_activateAction;
     QAction *m_aboutAction;
     QAction *m_quitAction;
-#ifdef _WIN32
     static const int HOTKEY_ID = 1;
-#else
-    class QShortcut *m_globalShortcut;
-#endif
 };
 
 #endif // UIALISTICON_H

@@ -25,10 +25,8 @@
 #include <QAccessible>
 #include <QRegularExpression>
 
-#ifdef _WIN32
 #include <comdef.h>
 #include <atlbase.h>
-#endif
 
 UIAList::UIAList(QWidget *parent)
     : QMainWindow(parent), m_trayIcon(nullptr), m_centralWidget(nullptr), 
@@ -108,7 +106,6 @@ void UIAList::setupUI()
 
 void UIAList::initializeUIAutomation()
 {
-#ifdef _WIN32
     HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     if (FAILED(hr)) {
         qDebug() << "Failed to initialize COM";
@@ -129,7 +126,6 @@ void UIAList::initializeUIAutomation()
     }
     
     qDebug() << "UI Automation initialized successfully";
-#endif
 }
 
 void UIAList::showWindow(void* foregroundWindow)
@@ -148,7 +144,6 @@ void UIAList::showWindow(void* foregroundWindow)
 
 void UIAList::enumerateControls(void* windowHandle)
 {
-#ifdef _WIN32
     if (!m_uiAutomation || !m_controlViewWalker) {
         qDebug() << "UI Automation not initialized";
         return;
@@ -186,12 +181,10 @@ void UIAList::enumerateControls(void* windowHandle)
     
     populateListWidget();
     qDebug() << "Enumeration complete. Found" << m_allControls.size() << "controls";
-#endif
 }
 
 void UIAList::walkControls(IUIAutomationElement* element, IUIAutomationTreeWalker* walker)
 {
-#ifdef _WIN32
     if (!element || !walker) return;
     
     // Get control type
@@ -226,7 +219,6 @@ void UIAList::walkControls(IUIAutomationElement* element, IUIAutomationTreeWalke
         child->Release();
         child = nextChild;
     }
-#endif
 }
 
 QString UIAList::getControlTypeString(CONTROLTYPEID controlType)
@@ -411,7 +403,6 @@ void UIAList::onHideMenusChanged(bool checked)
 
 void UIAList::cleanupUIAutomation()
 {
-#ifdef _WIN32
     if (m_controlViewWalker) {
         m_controlViewWalker->Release();
         m_controlViewWalker = nullptr;
@@ -423,7 +414,6 @@ void UIAList::cleanupUIAutomation()
     }
     
     CoUninitialize();
-#endif
 }
 
 bool UIAList::eventFilter(QObject *obj, QEvent *event)
@@ -508,10 +498,8 @@ void UIAList::announceSelectedItem(const QString& text)
     }
     
     // Also announce using Windows SAPI if available
-#ifdef _WIN32
     // This would require additional Windows-specific screen reader announcement code
     // For now, we rely on Qt's accessibility framework
-#endif
 }
 
 void UIAList::keyPressEvent(QKeyEvent *event)
@@ -554,7 +542,6 @@ void UIAList::onDoubleClickButtonClicked()
 
 void UIAList::clickSelectedControl()
 {
-#ifdef _WIN32
     QList<QListWidgetItem*> selectedItems = m_listWidget->selectedItems();
     if (selectedItems.isEmpty()) {
         qDebug() << "No control selected";
@@ -641,12 +628,10 @@ void UIAList::clickSelectedControl()
             qDebug() << "All click methods failed for control:" << controlInfo.displayText;
         }
     }
-#endif
 }
 
 void UIAList::focusSelectedControl()
 {
-#ifdef _WIN32
     QList<QListWidgetItem*> selectedItems = m_listWidget->selectedItems();
     if (selectedItems.isEmpty()) {
         qDebug() << "No control selected";
@@ -717,12 +702,10 @@ void UIAList::focusSelectedControl()
             qDebug() << "All focus methods failed for control:" << controlInfo.displayText;
         }
     }
-#endif
 }
 
 void UIAList::doubleClickSelectedControl()
 {
-#ifdef _WIN32
     QList<QListWidgetItem*> selectedItems = m_listWidget->selectedItems();
     if (selectedItems.isEmpty()) {
         qDebug() << "No control selected";
@@ -821,7 +804,6 @@ void UIAList::doubleClickSelectedControl()
             qDebug() << "All double-click methods failed for control:" << controlInfo.displayText;
         }
     }
-#endif
 }
 
 void UIAList::ensureItemSelected()
