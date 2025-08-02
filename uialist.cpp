@@ -33,7 +33,7 @@
 UIAList::UIAList(QWidget *parent)
     : QMainWindow(parent), m_trayIcon(nullptr), m_centralWidget(nullptr), 
       m_layout(nullptr), m_buttonLayout(nullptr), m_filterEdit(nullptr), m_listWidget(nullptr),
-      m_hideEmptyTitlesCheckBox(nullptr), m_clickButton(nullptr), m_focusButton(nullptr), 
+      m_hideEmptyTitlesCheckBox(nullptr), m_hideMenusCheckBox(nullptr), m_clickButton(nullptr), m_focusButton(nullptr), 
       m_doubleClickButton(nullptr), m_uiAutomation(nullptr), m_controlViewWalker(nullptr)
 {
     setupUI();
@@ -74,6 +74,11 @@ void UIAList::setupUI()
     m_hideEmptyTitlesCheckBox->setChecked(true); // Enabled by default
     connect(m_hideEmptyTitlesCheckBox, &QCheckBox::toggled, this, &UIAList::onHideEmptyTitlesChanged);
     
+    // Hide menus checkbox
+    m_hideMenusCheckBox = new QCheckBox("Hide menus and menu items", this);
+    m_hideMenusCheckBox->setChecked(true); // Enabled by default
+    connect(m_hideMenusCheckBox, &QCheckBox::toggled, this, &UIAList::onHideMenusChanged);
+    
     // Buttons layout
     m_buttonLayout = new QHBoxLayout();
     
@@ -94,6 +99,7 @@ void UIAList::setupUI()
     m_layout->addWidget(m_filterEdit);
     m_layout->addWidget(m_listWidget);
     m_layout->addWidget(m_hideEmptyTitlesCheckBox);
+    m_layout->addWidget(m_hideMenusCheckBox);
     m_layout->addLayout(m_buttonLayout);
     
     setWindowTitle("UI Automation List");
@@ -205,8 +211,8 @@ void UIAList::walkControls(IUIAutomationElement* element, IUIAutomationTreeWalke
     // Create display text
     QString displayText = QString("%1: %2").arg(controlTypeStr, controlName);
     
-    // Store control info with original name
-    ControlInfo controlInfo(displayText, controlName, element);
+    // Store control info with original name and control type
+    ControlInfo controlInfo(displayText, controlName, element, controlType);
     m_allControls.append(controlInfo);
     
     // Walk child elements
@@ -273,14 +279,30 @@ void UIAList::populateListWidget()
     m_listWidget->clear();
     
     bool hideEmptyTitles = m_hideEmptyTitlesCheckBox && m_hideEmptyTitlesCheckBox->isChecked();
+    bool hideMenus = m_hideMenusCheckBox && m_hideMenusCheckBox->isChecked();
     
     for (int i = 0; i < m_allControls.size(); ++i) {
         const ControlInfo& controlInfo = m_allControls[i];
+        
+        // Always filter out Text and Window control types
+        if (controlInfo.controlType == UIA_TextControlTypeId || 
+            controlInfo.controlType == UIA_WindowControlTypeId) {
+            continue;
+        }
         
         // Skip controls with empty or no titles if checkbox is checked
         if (hideEmptyTitles) {
             QString name = controlInfo.originalName.trimmed();
             if (name.isEmpty() || name == "(no name)") {
+                continue; // Skip this control
+            }
+        }
+        
+        // Skip menus and menu items if checkbox is checked
+        if (hideMenus) {
+            if (controlInfo.controlType == UIA_MenuControlTypeId ||
+                controlInfo.controlType == UIA_MenuBarControlTypeId ||
+                controlInfo.controlType == UIA_MenuItemControlTypeId) {
                 continue; // Skip this control
             }
         }
@@ -374,6 +396,13 @@ void UIAList::onItemSelectionChanged()
 }
 
 void UIAList::onHideEmptyTitlesChanged(bool checked)
+{
+    Q_UNUSED(checked)
+    // Repopulate the list with the new filter setting
+    populateListWidget();
+}
+
+void UIAList::onHideMenusChanged(bool checked)
 {
     Q_UNUSED(checked)
     // Repopulate the list with the new filter setting

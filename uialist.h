@@ -43,10 +43,11 @@ struct ControlInfo {
     QString displayText;
     QString originalName; // Store the original control name for filtering
     IUIAutomationElement* element;
+    CONTROLTYPEID controlType; // Store the control type for filtering
     
-    ControlInfo() : element(nullptr) {}
-    ControlInfo(const QString& text, const QString& name, IUIAutomationElement* elem) 
-        : displayText(text), originalName(name), element(elem) 
+    ControlInfo() : element(nullptr), controlType(0) {}
+    ControlInfo(const QString& text, const QString& name, IUIAutomationElement* elem, CONTROLTYPEID type = 0) 
+        : displayText(text), originalName(name), element(elem), controlType(type) 
     {
         if (element) element->AddRef();
     }
@@ -55,7 +56,7 @@ struct ControlInfo {
         if (element) element->Release();
     }
     
-    ControlInfo(const ControlInfo& other) : displayText(other.displayText), originalName(other.originalName), element(other.element) {
+    ControlInfo(const ControlInfo& other) : displayText(other.displayText), originalName(other.originalName), element(other.element), controlType(other.controlType) {
         if (element) element->AddRef();
     }
     
@@ -65,6 +66,7 @@ struct ControlInfo {
             displayText = other.displayText;
             originalName = other.originalName;
             element = other.element;
+            controlType = other.controlType;
             if (element) element->AddRef();
         }
         return *this;
@@ -84,6 +86,7 @@ private slots:
     void onFilterChanged(const QString& text);
     void onItemSelectionChanged();
     void onHideEmptyTitlesChanged(bool checked);
+    void onHideMenusChanged(bool checked);
     void onClickButtonClicked();
     void onFocusButtonClicked();
     void onDoubleClickButtonClicked();
@@ -118,6 +121,7 @@ private:
     QLineEdit *m_filterEdit;
     QListWidget *m_listWidget;
     QCheckBox *m_hideEmptyTitlesCheckBox;
+    QCheckBox *m_hideMenusCheckBox;
     QPushButton *m_clickButton;
     QPushButton *m_focusButton;
     QPushButton *m_doubleClickButton;
