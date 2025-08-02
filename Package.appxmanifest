@@ -11,10 +11,10 @@
             Version="1.0.0.0" />
 
   <Properties>
-    <DisplayName>UIAList - UI Automation Control Browser</DisplayName>
+    <DisplayName>UIAList - Accessibility Tool for Screen Readers</DisplayName>
     <PublisherDisplayName>Stefan Lohmaier</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
-    <Description>UIAList is a specialized accessibility tool designed for blind and visually impaired users utilizing screen readers such as JAWS, NVDA, or Windows Narrator. This application provides rapid navigation and interaction with UI controls within the currently active window through comprehensive UI Automation integration.</Description>
+    <Description>UIAList is an accessibility tool for blind and visually impaired users who rely on screen readers. It lists all controls by name and type for the current application with search functionality to quickly find and interact with controls, eliminating the need for traditional tabbing navigation.</Description>
   </Properties>
 
   <Dependencies>
@@ -29,7 +29,7 @@
     <Application Id="UIAList" Executable="UIAList.exe" EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
         DisplayName="UIAList"
-        Description="UI Automation Control Browser for screen reader users"
+        Description="Lists controls by name for quick access without tabbing"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png">

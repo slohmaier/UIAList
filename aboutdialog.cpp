@@ -1,5 +1,5 @@
 /*
- * UIAList - UI Automation Control Browser
+ * UIAList - Accessibility Tool for Screen Reader Users
  * Copyright (C) 2025 Stefan Lohmaier
  *
  * This program is free software: you can redistribute it and/or modify
@@ -62,7 +62,7 @@ void AboutDialog::setupUI()
     m_titleLabel = new QLabel("UIAList");
     m_titleLabel->setStyleSheet("QLabel { font-size: 24px; font-weight: bold; color: palette(text); }");
     
-    m_versionLabel = new QLabel("UI Automation Control Browser");
+    m_versionLabel = new QLabel("Accessibility Tool for Screen Reader Users");
     m_versionLabel->setStyleSheet("QLabel { font-size: 14px; color: palette(disabled-text); font-style: italic; }");
     
     titleLayout->addWidget(m_titleLabel);
@@ -82,14 +82,14 @@ void AboutDialog::setupUI()
     m_descriptionText->setMaximumHeight(150);
     
     QString description = 
-        "<p><b>UIAList</b> is a specialized accessibility tool designed for blind and visually impaired users utilizing screen readers such as JAWS, NVDA, or Windows Narrator.</p>"
-        "<p>This application provides rapid navigation and interaction with UI controls within the currently active window through comprehensive UI Automation integration.</p>"
-        "<p><b>Key Features:</b></p>"
+        "<p><b>UIAList</b> is an accessibility tool designed for blind and visually impaired users who rely on screen readers like JAWS, NVDA, or Windows Narrator.</p>"
+        "<p>This application lists all controls by name and type for the current application with search functionality to quickly find and interact with controls. It saves significant time by eliminating the need for traditional tabbing navigation that is typical with screen readers.</p>"
+        "<p><b>Key Benefits:</b></p>"
         "<ul>"
-        "<li>Real-time UI Control Enumeration</li>"
-        "<li>Advanced Filtering System</li>"
-        "<li>Multi-Modal Control Interaction</li>"
-        "<li>Screen Reader Optimized</li>"
+        "<li>Lists all controls instantly - no more tabbing through forms</li>"
+        "<li>Search controls by name for rapid access</li>"
+        "<li>Direct interaction (click, focus, double-click)</li>"
+        "<li>Optimized for screen reader users</li>"
         "</ul>";
     
     m_descriptionText->setHtml(description);

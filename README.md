@@ -1,21 +1,21 @@
-# UIAList - UI Automation Control Browser
+# UIAList - Accessibility Tool for Screen Reader Users
 
 ![UIAList Icon](uialist_icon.svg)
 
-**UIAList** is a specialized accessibility tool designed for blind and visually impaired users utilizing screen readers such as JAWS, NVDA, or Windows Narrator. This application provides rapid navigation and interaction with UI controls within the currently active window through comprehensive UI Automation integration.
+**UIAList** is an accessibility tool designed for blind and visually impaired users who rely on screen readers like JAWS, NVDA, or Windows Narrator. This application lists all controls by name and type for the current application with search functionality to quickly find and interact with controls. It saves significant time by eliminating the need for traditional tabbing navigation that is typical with screen readers.
 
 ## Overview
 
-UIAList leverages Microsoft's UI Automation (UIA) framework to enumerate, filter, and interact with all accessible controls in the foreground application window. The tool addresses the common accessibility challenge of efficiently locating and interacting with specific UI elements in complex applications without extensive sequential navigation.
+UIAList leverages Microsoft's UI Automation (UIA) framework to instantly enumerate and display all accessible controls in the foreground application window. Instead of forcing users to tab through dozens of controls sequentially, users can see all available controls at once, search by name, and jump directly to the desired element.
 
 ### Key Features
 
-- **Real-time UI Control Enumeration**: Dynamically discovers all UIA-accessible controls in the active window
-- **Advanced Filtering System**: Real-time text-based filtering with case-insensitive search capabilities
-- **Multi-Modal Control Interaction**: Click, Focus, and Double-Click operations with multiple fallback mechanisms
-- **Screen Reader Optimized**: Full compatibility with JAWS, NVDA, and Windows Narrator
-- **Keyboard-Driven Interface**: Complete functionality accessible via keyboard shortcuts and accelerator keys
-- **Accessibility Announcements**: Automatic screen reader notifications for control selection and navigation
+- **Instant Control Listing**: Shows all controls in the current application window at once - no more sequential tabbing
+- **Smart Search Filtering**: Type to instantly filter controls by name - find what you need in seconds
+- **Direct Control Interaction**: Click, focus, or double-click any control directly from the list
+- **Screen Reader Optimized**: Designed specifically for JAWS, NVDA, and Windows Narrator users
+- **Time-Saving Navigation**: Eliminate the tedious tab-through-everything approach
+- **Global Hotkey Access**: Activate instantly with Ctrl+Alt+U from any application
 
 ### Technical Architecture
 

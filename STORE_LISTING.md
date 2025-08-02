@@ -1,7 +1,7 @@
 # Microsoft Store Listing Information
 
 ## App Identity
-- **App Name:** UIAList - UI Automation Control Browser
+- **App Name:** UIAList - Accessibility Tool for Screen Readers
 - **Short Name:** UIAList
 - **Publisher:** Stefan Lohmaier
 - **Publisher Email:** stefan@slohmaier.de
@@ -11,18 +11,18 @@
 ## App Description
 
 ### Short Description (150 characters)
-Navigate and interact with UI controls quickly using screen readers. Perfect for blind and visually impaired users with JAWS, NVDA, Narrator.
+Lists all controls by name for quick access without tabbing. Perfect for blind and visually impaired screen reader users.
 
 ### Full Description
-UIAList is a specialized accessibility tool designed for blind and visually impaired users utilizing screen readers such as JAWS, NVDA, or Windows Narrator. This application provides rapid navigation and interaction with UI controls within the currently active window through comprehensive UI Automation integration.
+UIAList is an accessibility tool designed for blind and visually impaired users who rely on screen readers like JAWS, NVDA, or Windows Narrator. This application lists all controls by name and type for the current application with search functionality to quickly find and interact with controls. It saves significant time by eliminating the need for traditional tabbing navigation that is typical with screen readers.
 
 **Key Features:**
-• **Real-time UI Control Enumeration** - Dynamically discovers all accessible controls in the active window
-• **Advanced Filtering System** - Real-time text-based filtering with case-insensitive search capabilities  
-• **Multi-Modal Control Interaction** - Click, Focus, and Double-Click operations with multiple fallback mechanisms
-• **Screen Reader Optimized** - Full compatibility with JAWS, NVDA, and Windows Narrator
-• **Keyboard-Driven Interface** - Complete functionality accessible via keyboard shortcuts and accelerator keys
-• **Global Hotkey Support** - Activate from anywhere with Ctrl+Alt+U
+• **Instant Control Listing** - Shows all controls in the current application window at once - no more sequential tabbing
+• **Smart Search Filtering** - Type to instantly filter controls by name - find what you need in seconds  
+• **Direct Control Interaction** - Click, focus, or double-click any control directly from the list
+• **Screen Reader Optimized** - Designed specifically for JAWS, NVDA, and Windows Narrator users
+• **Time-Saving Navigation** - Eliminate the tedious tab-through-everything approach
+• **Global Hotkey Access** - Activate instantly with Ctrl+Alt+U from any application
 
 **How It Works:**
 1. Run UIAList in the system tray
@@ -32,11 +32,11 @@ UIAList is a specialized accessibility tool designed for blind and visually impa
 5. Use dedicated buttons for Click, Focus, or Double-Click actions
 
 **Perfect For:**
-• Form navigation in complex applications
-• Menu system access without hierarchical navigation  
-• Dialog interaction and button location
-• Application exploration and accessibility testing
-• Rapid control access in unfamiliar software
+• Navigating complex forms without endless tabbing
+• Finding specific buttons or controls by name instantly
+• Accessing dialog controls without sequential navigation
+• Exploring unfamiliar applications efficiently
+• Anyone who finds tabbing through interfaces tedious and time-consuming
 
 **Technical Highlights:**
 • Built with Qt 6.9+ for reliability and performance
@@ -50,7 +50,7 @@ UIAList is a specialized accessibility tool designed for blind and visually impa
 • Compatible with all major screen readers
 • No internet connection required
 
-UIAList enhances digital accessibility through intelligent UI automation, making complex applications more navigable for screen reader users.
+UIAList transforms how screen reader users navigate applications by providing instant access to all controls without the traditional tab-based sequential navigation.
 
 ## Keywords
 accessibility, screen reader, JAWS, NVDA, Windows Narrator, UI Automation, blind, visually impaired, keyboard navigation, assistive technology

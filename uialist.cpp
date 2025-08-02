@@ -1,5 +1,5 @@
 /*
- * UIAList - UI Automation Control Browser
+ * UIAList - Accessibility Tool for Screen Reader Users
  * Copyright (C) 2025 Stefan Lohmaier
  *
  * This program is free software: you can redistribute it and/or modify
@@ -100,7 +100,7 @@ void UIAList::setupUI()
     m_layout->addWidget(m_hideMenusCheckBox);
     m_layout->addLayout(m_buttonLayout);
     
-    setWindowTitle("UI Automation List");
+    setWindowTitle("UIAList - Screen Reader Control Navigator");
     resize(600, 400);
 }
 

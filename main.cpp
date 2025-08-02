@@ -1,5 +1,5 @@
 /*
- * UIAList - UI Automation Control Browser
+ * UIAList - Accessibility Tool for Screen Reader Users
  * Copyright (C) 2025 Stefan Lohmaier
  *
  * This program is free software: you can redistribute it and/or modify
