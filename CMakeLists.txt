@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(UIAList VERSION 0.1 LANGUAGES CXX)
+project(UIAList VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -96,11 +96,71 @@ set_target_properties(UIAList PROPERTIES
 )
 
 include(GNUInstallDirs)
-install(TARGETS UIAList
-    BUNDLE DESTINATION .
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-)
+
+# Windows-specific packaging configurations
+if(WIN32)
+    # Set Windows-specific properties
+    set_target_properties(UIAList PROPERTIES
+        WIN32_EXECUTABLE TRUE
+        OUTPUT_NAME "UIAList"
+    )
+    
+    # Enable Windows 10/11 manifest support
+    if(MSVC)
+        target_compile_definitions(UIAList PRIVATE 
+            WINVER=0x0A00
+            _WIN32_WINNT=0x0A00
+        )
+    endif()
+    
+    # Install executable and required Qt libraries
+    install(TARGETS UIAList
+        RUNTIME DESTINATION bin
+    )
+    
+    # Install Qt libraries (for deployment)
+    if(QT_VERSION_MAJOR EQUAL 6)
+        find_program(QT_DEPLOYQT_EXECUTABLE windeployqt HINTS ${Qt6_DIR}/../../../bin)
+    else()
+        find_program(QT_DEPLOYQT_EXECUTABLE windeployqt HINTS ${Qt5_DIR}/../../../bin)
+    endif()
+    
+    if(QT_DEPLOYQT_EXECUTABLE)
+        install(CODE "
+            execute_process(
+                COMMAND ${QT_DEPLOYQT_EXECUTABLE} \${CMAKE_INSTALL_PREFIX}/bin/UIAList.exe
+                --release --no-translations --no-system-d3d-compiler --no-opengl-sw
+            )
+        ")
+    endif()
+    
+    # Copy Package.appxmanifest for MSIX packaging
+    install(FILES 
+        ${CMAKE_SOURCE_DIR}/Package.appxmanifest
+        DESTINATION .
+    )
+    
+    # Copy Assets directory for MSIX packaging
+    install(DIRECTORY 
+        ${CMAKE_SOURCE_DIR}/Assets/
+        DESTINATION Assets
+        PATTERN "*.md" EXCLUDE
+    )
+    
+    # Copy privacy policy
+    install(FILES 
+        ${CMAKE_SOURCE_DIR}/PrivacyPolicy.html
+        DESTINATION .
+    )
+    
+else()
+    # Non-Windows install
+    install(TARGETS UIAList
+        BUNDLE DESTINATION .
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
+endif()
 
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(UIAList)
