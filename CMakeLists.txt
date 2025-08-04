@@ -128,6 +128,14 @@ if(WIN32)
     endif()
     
     if(QT_DEPLOYQT_EXECUTABLE)
+        # Post-build step to deploy Qt libraries to build directory
+        add_custom_command(TARGET UIAList POST_BUILD
+            COMMAND ${QT_DEPLOYQT_EXECUTABLE} $<TARGET_FILE:UIAList>
+                $<$<CONFIG:Debug>:--debug>$<$<CONFIG:Release>:--release> --no-translations --no-system-d3d-compiler --no-opengl-sw
+            COMMENT "Deploying Qt libraries to build directory"
+        )
+        
+        # Install step for deployment
         install(CODE "
             execute_process(
                 COMMAND ${QT_DEPLOYQT_EXECUTABLE} \${CMAKE_INSTALL_PREFIX}/bin/UIAList.exe
