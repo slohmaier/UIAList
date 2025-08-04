@@ -24,6 +24,7 @@
 #include <QKeyEvent>
 #include <QAccessible>
 #include <QRegularExpression>
+#include <QIcon>
 
 #include <comdef.h>
 #include <atlbase.h>
@@ -101,6 +102,7 @@ void UIAList::setupUI()
     m_layout->addLayout(m_buttonLayout);
     
     setWindowTitle("UIAList - Screen Reader Control Navigator");
+    setWindowIcon(QIcon(":/icons/uialist_icon.png"));
     resize(600, 400);
 }
 
