@@ -33,8 +33,10 @@ UIAList::UIAList(QWidget *parent)
     : QMainWindow(parent), m_trayIcon(nullptr), m_centralWidget(nullptr), 
       m_layout(nullptr), m_buttonLayout(nullptr), m_windowTitleLabel(nullptr), m_filterEdit(nullptr), m_listWidget(nullptr),
       m_hideEmptyTitlesCheckBox(nullptr), m_hideMenusCheckBox(nullptr), m_clickButton(nullptr), m_focusButton(nullptr), 
-      m_doubleClickButton(nullptr), m_uiAutomation(nullptr), m_controlViewWalker(nullptr)
+      m_doubleClickButton(nullptr), m_uiAutomation(nullptr), m_controlViewWalker(nullptr), m_settings(nullptr)
 {
+    m_settings = new QSettings("UIAList", "Settings", this);
+    
     setupUI();
     initializeUIAutomation();
     
@@ -448,7 +450,7 @@ bool UIAList::eventFilter(QObject *obj, QEvent *event)
             return true; // Suppress default behavior
         } else if (keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter) {
             ensureItemSelected();
-            clickSelectedControl();
+            executeDefaultAction();
             hide();
             return true; // Suppress default behavior
         }
@@ -893,4 +895,24 @@ void UIAList::updateButtonStates()
     if (m_clickButton) m_clickButton->setEnabled(hasVisibleItems);
     if (m_focusButton) m_focusButton->setEnabled(hasVisibleItems);
     if (m_doubleClickButton) m_doubleClickButton->setEnabled(hasVisibleItems);
+}
+
+void UIAList::executeDefaultAction()
+{
+    int defaultAction = m_settings->value("defaultAction", 0).toInt(); // 0 = Click by default
+    
+    switch (defaultAction) {
+        case 0: // Click
+            clickSelectedControl();
+            break;
+        case 1: // Double Click
+            doubleClickSelectedControl();
+            break;
+        case 2: // Focus
+            focusSelectedControl();
+            break;
+        default:
+            clickSelectedControl(); // Fallback to click
+            break;
+    }
 }

@@ -31,6 +31,7 @@
 #include <QString>
 #include <QKeyEvent>
 #include <QFocusEvent>
+#include <QSettings>
 
 #include <windows.h>
 #include <uiautomation.h>
@@ -112,6 +113,7 @@ private:
     void doubleClickSelectedControl();
     void ensureItemSelected();
     void updateButtonStates();
+    void executeDefaultAction();
 
     UIAListIcon *m_trayIcon;
     
@@ -137,5 +139,6 @@ private:
     QList<ControlInfo> m_allControls;
     ControlInfo m_selectedControl;
     QString m_targetWindowTitle;
+    QSettings *m_settings;
 };
 #endif // UIALIST_H

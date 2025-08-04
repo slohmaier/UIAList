@@ -23,6 +23,8 @@
 #include <QSystemTrayIcon>
 #include <QMenu>
 #include <QAction>
+#include <QKeySequence>
+#include <QSettings>
 
 #include <QAbstractNativeEventFilter>
 
@@ -36,12 +38,14 @@ public:
     
     void show();
     bool isVisible() const;
+    void updateShortcut(const QKeySequence &newShortcut);
 
 signals:
     void activateRequested(void* foregroundWindow);
 
 private slots:
     void activate();
+    void showSettings();
     void showAbout();
     void quit();
 
@@ -52,13 +56,16 @@ private:
     void createContextMenu();
     void registerGlobalShortcut();
     void unregisterGlobalShortcut();
+    void registerGlobalShortcut(const QKeySequence &keySequence);
     
     QSystemTrayIcon *m_trayIcon;
     QMenu *m_contextMenu;
     QAction *m_activateAction;
+    QAction *m_settingsAction;
     QAction *m_aboutAction;
     QAction *m_quitAction;
     static const int HOTKEY_ID = 1;
+    QKeySequence m_currentShortcut;
 };
 
 #endif // UIALISTICON_H

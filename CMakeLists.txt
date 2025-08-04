@@ -43,6 +43,8 @@ set(PROJECT_SOURCES
         uialisticon.h
         aboutdialog.cpp
         aboutdialog.h
+        settingsdialog.cpp
+        settingsdialog.h
         ${RESOURCE_FILES}
         ${TS_FILES}
 )

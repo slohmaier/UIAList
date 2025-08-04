@@ -18,6 +18,7 @@
 
 #include "uialisticon.h"
 #include "aboutdialog.h"
+#include "settingsdialog.h"
 #include <QApplication>
 #include <QIcon>
 #include <QDebug>
@@ -25,7 +26,7 @@
 #include <windows.h>
 
 UIAListIcon::UIAListIcon(QObject *parent)
-    : QObject(parent), m_trayIcon(nullptr), m_contextMenu(nullptr), m_activateAction(nullptr), m_aboutAction(nullptr), m_quitAction(nullptr)
+    : QObject(parent), m_trayIcon(nullptr), m_contextMenu(nullptr), m_activateAction(nullptr), m_settingsAction(nullptr), m_aboutAction(nullptr), m_quitAction(nullptr), m_currentShortcut(QKeySequence("Ctrl+Alt+U"))
 {
     if (!QSystemTrayIcon::isSystemTrayAvailable()) {
         qDebug() << "System tray is not available!";
@@ -44,6 +45,11 @@ UIAListIcon::UIAListIcon(QObject *parent)
     createContextMenu();
     m_trayIcon->setContextMenu(m_contextMenu);
     qDebug() << "Context menu set";
+    
+    // Load shortcut from settings
+    QSettings settings("UIAList", "Settings");
+    QString shortcutString = settings.value("shortcutKey", "Ctrl+Alt+U").toString();
+    m_currentShortcut = QKeySequence::fromString(shortcutString);
     
     registerGlobalShortcut();
 }
@@ -77,8 +83,11 @@ void UIAListIcon::createContextMenu()
     m_contextMenu = new QMenu();
     
     m_activateAction = new QAction("Activate", this);
-    m_activateAction->setShortcut(QKeySequence("Ctrl+Alt+U"));
+    m_activateAction->setShortcut(m_currentShortcut);
     connect(m_activateAction, &QAction::triggered, this, &UIAListIcon::activate);
+
+    m_settingsAction = new QAction("Settings...", this);
+    connect(m_settingsAction, &QAction::triggered, this, &UIAListIcon::showSettings);
     
     m_aboutAction = new QAction("About...", this);
     connect(m_aboutAction, &QAction::triggered, this, &UIAListIcon::showAbout);
@@ -88,6 +97,7 @@ void UIAListIcon::createContextMenu()
     
     m_contextMenu->addAction(m_activateAction);
     m_contextMenu->addSeparator();
+    m_contextMenu->addAction(m_settingsAction);
     m_contextMenu->addAction(m_aboutAction);
     m_contextMenu->addSeparator();
     m_contextMenu->addAction(m_quitAction);
@@ -103,6 +113,29 @@ void UIAListIcon::activate()
     emit activateRequested((void*)foregroundWindow);
 }
 
+void UIAListIcon::showSettings()
+{
+    // Temporarily unregister hotkey to prevent activation during settings change
+    unregisterGlobalShortcut();
+    
+    SettingsDialog dialog;
+    QKeySequence oldShortcut = m_currentShortcut;
+    
+    if (dialog.exec() == QDialog::Accepted) {
+        QKeySequence newShortcut = dialog.shortcutKey();
+        if (newShortcut != oldShortcut) {
+            updateShortcut(newShortcut);
+            qDebug() << "Shortcut updated from" << oldShortcut.toString() << "to" << newShortcut.toString();
+        } else {
+            // Re-register the same shortcut
+            registerGlobalShortcut(m_currentShortcut);
+        }
+    } else {
+        // Dialog was cancelled, re-register the old shortcut
+        registerGlobalShortcut(m_currentShortcut);
+    }
+}
+
 void UIAListIcon::showAbout()
 {
     AboutDialog dialog;
@@ -116,14 +149,49 @@ void UIAListIcon::quit()
 
 void UIAListIcon::registerGlobalShortcut()
 {
+    registerGlobalShortcut(m_currentShortcut);
+}
+
+void UIAListIcon::registerGlobalShortcut(const QKeySequence &keySequence)
+{
+    // Unregister old hotkey first
+    unregisterGlobalShortcut();
+    
     // Install native event filter to handle hotkey messages
     qApp->installNativeEventFilter(this);
     
-    // Register Ctrl+Alt+U hotkey (MOD_CONTROL | MOD_ALT, VK_U)
-    if (RegisterHotKey(nullptr, HOTKEY_ID, MOD_CONTROL | MOD_ALT, 'U')) {
-        qDebug() << "Global shortcut Ctrl+Alt+U registered successfully";
+    // Convert QKeySequence to Windows virtual key and modifiers
+    if (keySequence.isEmpty()) {
+        qDebug() << "Empty key sequence, not registering hotkey";
+        return;
+    }
+    
+    int key = keySequence[0];
+    int modifiers = key & 0xFFFF0000;
+    int vk = key & 0x0000FFFF;
+    
+    UINT winModifiers = 0;
+    if (modifiers & Qt::ControlModifier) winModifiers |= MOD_CONTROL;
+    if (modifiers & Qt::AltModifier) winModifiers |= MOD_ALT;
+    if (modifiers & Qt::ShiftModifier) winModifiers |= MOD_SHIFT;
+    if (modifiers & Qt::MetaModifier) winModifiers |= MOD_WIN;
+    
+    // Convert Qt key to Windows virtual key
+    UINT winVk = vk;
+    if (vk >= Qt::Key_A && vk <= Qt::Key_Z) {
+        winVk = vk - Qt::Key_A + 'A';
+    } else if (vk >= Qt::Key_0 && vk <= Qt::Key_9) {
+        winVk = vk - Qt::Key_0 + '0';
+    } else if (vk >= Qt::Key_F1 && vk <= Qt::Key_F12) {
+        winVk = vk - Qt::Key_F1 + VK_F1;
+    }
+    // Add more key mappings as needed
+    
+    if (RegisterHotKey(nullptr, HOTKEY_ID, winModifiers, winVk)) {
+        qDebug() << "Global shortcut" << keySequence.toString() << "registered successfully";
+        m_currentShortcut = keySequence;
     } else {
-        qDebug() << "Failed to register global shortcut Ctrl+Alt+U";
+        qDebug() << "Failed to register global shortcut" << keySequence.toString();
     }
 }
 
@@ -132,6 +200,12 @@ void UIAListIcon::unregisterGlobalShortcut()
     UnregisterHotKey(nullptr, HOTKEY_ID);
     qApp->removeNativeEventFilter(this);
     qDebug() << "Global shortcut unregistered";
+}
+
+void UIAListIcon::updateShortcut(const QKeySequence &newShortcut)
+{
+    registerGlobalShortcut(newShortcut);
+    m_activateAction->setShortcut(newShortcut);
 }
 
 bool UIAListIcon::nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result)
