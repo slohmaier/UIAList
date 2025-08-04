@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(\"C:\\Qt\\Tools\\CMake_64\\bin\\cmake.exe\" --version)",
+      "Bash(\"C:\\Qt\\Tools\\CMake_64\\bin\\cmake.exe\" --build . --config Release)"
     ],
     "deny": []
   }

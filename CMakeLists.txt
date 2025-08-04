@@ -14,26 +14,65 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools)
 
 set(TS_FILES UIAList_en_US.ts)
 
-# Convert SVG icon to PNG
+# Convert SVG icon to PNG and ICO
 find_program(INKSCAPE_EXECUTABLE inkscape)
-if(INKSCAPE_EXECUTABLE)
+if(NOT INKSCAPE_EXECUTABLE)
+    message(WARNING "Inkscape not found. Using pre-generated PNG icon file.")
+    set(USE_PREGENERATED_ICON TRUE)
+else()
+    set(USE_PREGENERATED_ICON FALSE)
+endif()
+
+# Convert SVG to PNG for Qt resources
+if(NOT USE_PREGENERATED_ICON)
     add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png
         COMMAND ${INKSCAPE_EXECUTABLE} --export-type=png --export-filename=${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png --export-width=32 --export-height=32 ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.svg
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.svg
         COMMENT "Converting SVG icon to PNG"
     )
-    add_custom_target(convert_icon ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png)
-    
-    # Create Qt resource file
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc.in ${CMAKE_CURRENT_BINARY_DIR}/resources.qrc @ONLY)
-    
-    set(RESOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/resources.qrc)
-    set_source_files_properties(${RESOURCE_FILES} PROPERTIES OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png)
 else()
-    message(WARNING "Inkscape not found. SVG icon will not be converted to PNG automatically.")
-    set(RESOURCE_FILES "")
+    # Copy pre-generated PNG file
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.png ${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.png
+        COMMENT "Using pre-generated PNG icon"
+    )
 endif()
+
+# Generate ICO file (Windows only)
+if(WIN32)
+    # Use ImageMagick to create proper ICO file
+    find_program(MAGICK_EXECUTABLE magick)
+    if(MAGICK_EXECUTABLE)
+        add_custom_command(
+            OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.ico
+            COMMAND ${MAGICK_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.png ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.ico
+            DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.png
+            COMMENT "Creating ICO from PNG using ImageMagick"
+        )
+    else()
+        # Fallback: copy PNG to ICO (will cause resource compiler error)
+        add_custom_command(
+            OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.ico
+            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.png ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.ico
+            DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.png
+            COMMENT "Creating ICO from PNG (fallback method)"
+        )
+        message(WARNING "ImageMagick not found. ICO file may not be properly formatted for Windows resource compiler.")
+    endif()
+    
+    add_custom_target(convert_icon ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.ico)
+else()
+    add_custom_target(convert_icon ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png)
+endif()
+
+# Create Qt resource file
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc.in ${CMAKE_CURRENT_BINARY_DIR}/resources.qrc @ONLY)
+
+set(RESOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/resources.qrc)
+set_source_files_properties(${RESOURCE_FILES} PROPERTIES OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png)
 
 set(PROJECT_SOURCES
         main.cpp
@@ -48,6 +87,11 @@ set(PROJECT_SOURCES
         ${RESOURCE_FILES}
         ${TS_FILES}
 )
+
+# Add Windows resource file for executable icon
+if(WIN32)
+    list(APPEND PROJECT_SOURCES UIAList.rc)
+endif()
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(UIAList
@@ -79,9 +123,7 @@ endif()
 target_link_libraries(UIAList PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 
 # Ensure PNG is generated before compiling resources
-if(INKSCAPE_EXECUTABLE)
-    add_dependencies(UIAList convert_icon)
-endif()
+add_dependencies(UIAList convert_icon)
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an

@@ -81,3 +81,7 @@ CMakeLists.txt.user*
 .uic/
 /build*/
 package_output
+
+# Generated icon files
+uialist_icon.ico
+uialist_icon.png
