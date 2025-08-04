@@ -26,6 +26,7 @@
 #include <QListWidget>
 #include <QCheckBox>
 #include <QPushButton>
+#include <QLabel>
 #include <QMap>
 #include <QString>
 #include <QKeyEvent>
@@ -105,6 +106,7 @@ private:
     void cleanupUIAutomation();
     void selectVisibleListItem(int direction);
     void announceSelectedItem(const QString& text);
+    void announceText(const QString& text);
     void clickSelectedControl();
     void focusSelectedControl();
     void doubleClickSelectedControl();
@@ -117,6 +119,7 @@ private:
     QWidget *m_centralWidget;
     QVBoxLayout *m_layout;
     QHBoxLayout *m_buttonLayout;
+    QLabel *m_windowTitleLabel;
     QLineEdit *m_filterEdit;
     QListWidget *m_listWidget;
     QCheckBox *m_hideEmptyTitlesCheckBox;
@@ -133,5 +136,6 @@ private:
     QMap<QString, ControlInfo> m_controlMap;
     QList<ControlInfo> m_allControls;
     ControlInfo m_selectedControl;
+    QString m_targetWindowTitle;
 };
 #endif // UIALIST_H

@@ -31,7 +31,7 @@
 
 UIAList::UIAList(QWidget *parent)
     : QMainWindow(parent), m_trayIcon(nullptr), m_centralWidget(nullptr), 
-      m_layout(nullptr), m_buttonLayout(nullptr), m_filterEdit(nullptr), m_listWidget(nullptr),
+      m_layout(nullptr), m_buttonLayout(nullptr), m_windowTitleLabel(nullptr), m_filterEdit(nullptr), m_listWidget(nullptr),
       m_hideEmptyTitlesCheckBox(nullptr), m_hideMenusCheckBox(nullptr), m_clickButton(nullptr), m_focusButton(nullptr), 
       m_doubleClickButton(nullptr), m_uiAutomation(nullptr), m_controlViewWalker(nullptr)
 {
@@ -57,6 +57,11 @@ void UIAList::setupUI()
     setCentralWidget(m_centralWidget);
     
     m_layout = new QVBoxLayout(m_centralWidget);
+    
+    // Window title label
+    m_windowTitleLabel = new QLabel(this);
+    m_windowTitleLabel->setFocusPolicy(Qt::TabFocus);
+    m_windowTitleLabel->setText("No window selected");
     
     // Filter edit box
     m_filterEdit = new QLineEdit(this);
@@ -95,6 +100,7 @@ void UIAList::setupUI()
     m_buttonLayout->addWidget(m_focusButton);
     m_buttonLayout->addStretch(); // Add stretch to push buttons to the left
     
+    m_layout->addWidget(m_windowTitleLabel);
     m_layout->addWidget(m_filterEdit);
     m_layout->addWidget(m_listWidget);
     m_layout->addWidget(m_hideEmptyTitlesCheckBox);
@@ -142,6 +148,11 @@ void UIAList::showWindow(void* foregroundWindow)
     
     // Enumerate controls of the passed foreground window
     enumerateControls(foregroundWindow);
+    
+    // Announce to screen reader
+    if (!m_targetWindowTitle.isEmpty()) {
+        announceText(QString("Showing controls for %1").arg(m_targetWindowTitle));
+    }
 }
 
 void UIAList::enumerateControls(void* windowHandle)
@@ -162,11 +173,17 @@ void UIAList::enumerateControls(void* windowHandle)
     m_controlMap.clear();
     m_listWidget->clear();
     
-    // Get window title for debugging
+    // Get window title for debugging and display
     wchar_t windowTitle[256];
     GetWindowTextW(targetWindow, windowTitle, 256);
-    QString title = QString::fromWCharArray(windowTitle);
-    qDebug() << "Enumerating controls for window:" << title << "HWND:" << targetWindow;
+    m_targetWindowTitle = QString::fromWCharArray(windowTitle);
+    if (m_targetWindowTitle.isEmpty()) {
+        m_targetWindowTitle = "Untitled Window";
+    }
+    qDebug() << "Enumerating controls for window:" << m_targetWindowTitle << "HWND:" << targetWindow;
+    
+    // Update the window title label
+    m_windowTitleLabel->setText(QString("Controls for: %1").arg(m_targetWindowTitle));
     
     // Get UI Automation element for the target window
     IUIAutomationElement* rootElement = nullptr;
@@ -502,6 +519,23 @@ void UIAList::announceSelectedItem(const QString& text)
     // Also announce using Windows SAPI if available
     // This would require additional Windows-specific screen reader announcement code
     // For now, we rely on Qt's accessibility framework
+}
+
+void UIAList::announceText(const QString& text)
+{
+    // Set the window title label as accessible name and description for screen readers
+    if (m_windowTitleLabel) {
+        m_windowTitleLabel->setAccessibleName(text);
+        m_windowTitleLabel->setAccessibleDescription(text);
+        
+        // Send a focus event to the label to make screen readers announce it
+        QAccessibleEvent labelEvent(m_windowTitleLabel, QAccessible::Focus);
+        QAccessible::updateAccessibility(&labelEvent);
+        
+        // Also send a name changed event
+        QAccessibleEvent nameEvent(m_windowTitleLabel, QAccessible::NameChanged);
+        QAccessible::updateAccessibility(&nameEvent);
+    }
 }
 
 void UIAList::keyPressEvent(QKeyEvent *event)
