@@ -519,6 +519,16 @@ void UIAList::focusOutEvent(QFocusEvent *event)
     hide();
 }
 
+bool UIAList::event(QEvent *event)
+{
+    if (event->type() == QEvent::WindowDeactivate) {
+        // Window lost focus/activation - hide it
+        hide();
+        return true;
+    }
+    return QMainWindow::event(event);
+}
+
 void UIAList::onClickButtonClicked()
 {
     ensureItemSelected();
