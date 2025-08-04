@@ -3,7 +3,16 @@
     "allow": [
       "Bash(powershell:*)",
       "Bash(\"C:\\Qt\\Tools\\CMake_64\\bin\\cmake.exe\" --version)",
-      "Bash(\"C:\\Qt\\Tools\\CMake_64\\bin\\cmake.exe\" --build . --config Release)"
+      "Bash(\"C:\\Qt\\Tools\\CMake_64\\bin\\cmake.exe\" --build . --config Release)",
+      "Bash(\"C:\\Qt\\Tools\\CMake_64\\bin\\cmake.exe\" --build build_msix --config Release)",
+      "Bash(dir:*)",
+      "Bash(ls:*)",
+      "Bash(inkscape:*)",
+      "Bash(magick:*)",
+      "Bash(rmdir:*)",
+      "Bash(mkdir:*)",
+      "Bash(\"C:\\Qt\\Tools\\CMake_64\\bin\\cmake.exe\" ..)",
+      "Bash(\"C:\\Qt\\Tools\\CMake_64\\bin\\cmake.exe\" --build \"C:\\Users\\slohm\\git\\UIAList\\build_msix\" --config Release)"
     ],
     "deny": []
   }

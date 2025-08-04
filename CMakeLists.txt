@@ -48,16 +48,16 @@ if(WIN32)
     if(MAGICK_EXECUTABLE)
         add_custom_command(
             OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.ico
-            COMMAND ${MAGICK_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.png ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.ico
-            DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.png
+            COMMAND ${MAGICK_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.ico
+            DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png
             COMMENT "Creating ICO from PNG using ImageMagick"
         )
     else()
         # Fallback: copy PNG to ICO (will cause resource compiler error)
         add_custom_command(
             OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.ico
-            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.png ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.ico
-            DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.png
+            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.ico
+            DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png
             COMMENT "Creating ICO from PNG (fallback method)"
         )
         message(WARNING "ImageMagick not found. ICO file may not be properly formatted for Windows resource compiler.")
