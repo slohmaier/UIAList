@@ -17,6 +17,7 @@
  */
 
 #include "aboutdialog.h"
+#include "uialist.h"
 #include <QDesktopServices>
 #include <QUrl>
 #include <QApplication>
@@ -161,7 +162,8 @@ void AboutDialog::resetSettings()
         "• Reset all application settings to default values\n"
         "• Remove UIAList from Windows startup\n"
         "• Reset global shortcut to Ctrl+Alt+U\n"
-        "• Reset default action to Click\n\n"
+        "• Reset default action to Click\n"
+        "• Show the welcome screen again\n\n"
         "Are you sure you want to continue?",
         QMessageBox::Yes | QMessageBox::No,
         QMessageBox::No);
@@ -175,17 +177,42 @@ void AboutDialog::resetSettings()
         settings.clear();
         settings.sync();
         
-        QMessageBox::information(this, 
-            "Settings Reset", 
-            "All settings have been reset to default values and UIAList has been removed from Windows startup.\n\n"
-            "The application will restart with default settings.");
+        // Find the main window - try parent first, then search all top-level widgets
+        UIAList *mainWindow = nullptr;
         
-        // Close the about dialog
+        // First try walking up the parent hierarchy
+        QWidget *widget = this;
+        while (widget) {
+            mainWindow = qobject_cast<UIAList*>(widget);
+            if (mainWindow) break;
+            widget = widget->parentWidget();
+        }
+        
+        // If not found, search all top-level widgets
+        if (!mainWindow) {
+            QWidgetList topLevelWidgets = QApplication::topLevelWidgets();
+            for (QWidget *w : topLevelWidgets) {
+                mainWindow = qobject_cast<UIAList*>(w);
+                if (mainWindow) break;
+            }
+        }
+        
+        // Close the about dialog first
         accept();
         
-        // Request application restart
-        QApplication::quit();
-        QProcess::startDetached(QApplication::applicationFilePath(), QStringList());
+        // Show success message
+        QMessageBox::information(mainWindow, 
+            "Settings Reset", 
+            "All settings have been reset to default values and UIAList has been removed from Windows startup.\n\n"
+            "The welcome screen will now appear to help you get started.");
+        
+        // Show welcome screen if we found the main window
+        if (mainWindow) {
+            mainWindow->showWelcomeScreen();
+        } else {
+            QMessageBox::warning(nullptr, "Reset Complete", 
+                "Settings have been reset successfully. Please restart the application to see the welcome screen.");
+        }
     }
 }
 

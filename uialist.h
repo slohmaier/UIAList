@@ -80,6 +80,8 @@ class UIAList : public QMainWindow
 public:
     UIAList(QWidget *parent = nullptr);
     ~UIAList();
+    
+    void showWelcomeScreen();
 
 private slots:
     void showWindow(void* foregroundWindow);
@@ -100,6 +102,7 @@ protected:
 private:
     void setupUI();
     void initializeUIAutomation();
+    void checkAndShowWelcome();
     void enumerateControls(void* windowHandle);
     void walkControls(IUIAutomationElement* element, IUIAutomationTreeWalker* walker);
     QString getControlTypeString(CONTROLTYPEID controlType);

@@ -16,8 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef ABOUTDIALOG_H
-#define ABOUTDIALOG_H
+#ifndef WELCOMEDIALOG_H
+#define WELCOMEDIALOG_H
 
 #include <QDialog>
 #include <QVBoxLayout>
@@ -26,36 +26,29 @@
 #include <QPushButton>
 #include <QPixmap>
 #include <QTextBrowser>
-#include <QSettings>
 
-class UIAList;
-
-class AboutDialog : public QDialog
+class WelcomeDialog : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit AboutDialog(QWidget *parent = nullptr);
+    explicit WelcomeDialog(QWidget *parent = nullptr);
 
 private slots:
-    void openGitHubPage();
-    void resetSettings();
+    void openSettings();
 
 private:
     void setupUI();
-    void removeFromAutoStart();
     
     QVBoxLayout *m_mainLayout;
     QHBoxLayout *m_iconLayout;
     QLabel *m_iconLabel;
     QLabel *m_titleLabel;
     QLabel *m_versionLabel;
-    QTextBrowser *m_descriptionText;
-    QLabel *m_copyrightLabel;
-    QPushButton *m_githubButton;
-    QPushButton *m_resetButton;
+    QTextBrowser *m_welcomeText;
+    QPushButton *m_settingsButton;
     QPushButton *m_closeButton;
     QHBoxLayout *m_buttonLayout;
 };
 
-#endif // ABOUTDIALOG_H
+#endif // WELCOMEDIALOG_H

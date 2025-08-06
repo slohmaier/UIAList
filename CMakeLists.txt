@@ -84,6 +84,8 @@ set(PROJECT_SOURCES
         aboutdialog.h
         settingsdialog.cpp
         settingsdialog.h
+        welcomedialog.cpp
+        welcomedialog.h
         ${RESOURCE_FILES}
         ${TS_FILES}
 )

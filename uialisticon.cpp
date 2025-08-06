@@ -138,7 +138,9 @@ void UIAListIcon::showSettings()
 
 void UIAListIcon::showAbout()
 {
-    AboutDialog dialog;
+    // Pass the main window as parent to the AboutDialog
+    QWidget *mainWindow = qobject_cast<QWidget*>(parent());
+    AboutDialog dialog(mainWindow);
     dialog.exec();
 }
 

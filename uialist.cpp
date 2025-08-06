@@ -18,6 +18,7 @@
 
 #include "uialist.h"
 #include "uialisticon.h"
+#include "welcomedialog.h"
 #include <QDebug>
 #include <QListWidgetItem>
 #include <QVariant>
@@ -46,6 +47,9 @@ UIAList::UIAList(QWidget *parent)
     
     // Hide the main window by default, only show tray icon
     hide();
+    
+    // Check if we should show the welcome screen
+    checkAndShowWelcome();
 }
 
 UIAList::~UIAList() 
@@ -915,4 +919,22 @@ void UIAList::executeDefaultAction()
             clickSelectedControl(); // Fallback to click
             break;
     }
+}
+
+void UIAList::checkAndShowWelcome()
+{
+    bool welcomeShown = m_settings->value("welcomeShown", false).toBool();
+    
+    if (!welcomeShown) {
+        // Show welcome dialog on first run
+        WelcomeDialog welcome(this);
+        welcome.exec();
+    }
+}
+
+void UIAList::showWelcomeScreen()
+{
+    // Show welcome dialog
+    WelcomeDialog welcome(this);
+    welcome.exec();
 }
