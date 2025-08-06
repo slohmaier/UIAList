@@ -26,6 +26,7 @@
 #include <QPushButton>
 #include <QPixmap>
 #include <QTextBrowser>
+#include <QSettings>
 
 class AboutDialog : public QDialog
 {
@@ -36,9 +37,11 @@ public:
 
 private slots:
     void openGitHubPage();
+    void resetSettings();
 
 private:
     void setupUI();
+    void removeFromAutoStart();
     
     QVBoxLayout *m_mainLayout;
     QHBoxLayout *m_iconLayout;
@@ -48,6 +51,7 @@ private:
     QTextBrowser *m_descriptionText;
     QLabel *m_copyrightLabel;
     QPushButton *m_githubButton;
+    QPushButton *m_resetButton;
     QPushButton *m_closeButton;
     QHBoxLayout *m_buttonLayout;
 };

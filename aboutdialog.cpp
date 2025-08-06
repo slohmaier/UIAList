@@ -21,12 +21,17 @@
 #include <QUrl>
 #include <QApplication>
 #include <QIcon>
+#include <QMessageBox>
+#include <QSettings>
+#include <QProcess>
+
+#include <windows.h>
 
 AboutDialog::AboutDialog(QWidget *parent)
     : QDialog(parent), m_mainLayout(nullptr), m_iconLayout(nullptr), 
       m_iconLabel(nullptr), m_titleLabel(nullptr), m_versionLabel(nullptr),
       m_descriptionText(nullptr), m_copyrightLabel(nullptr), 
-      m_githubButton(nullptr), m_closeButton(nullptr), m_buttonLayout(nullptr)
+      m_githubButton(nullptr), m_resetButton(nullptr), m_closeButton(nullptr), m_buttonLayout(nullptr)
 {
     setupUI();
     setWindowTitle("About UIAList");
@@ -120,11 +125,17 @@ void AboutDialog::setupUI()
     m_githubButton->setStyleSheet("QPushButton { padding: 8px 16px; border-radius: 4px; font-weight: bold; }");
     connect(m_githubButton, &QPushButton::clicked, this, &AboutDialog::openGitHubPage);
     
+    m_resetButton = new QPushButton("Reset All Settings");
+    m_resetButton->setStyleSheet("QPushButton { padding: 8px 16px; border-radius: 4px; font-weight: bold; background-color: #ff6b6b; color: white; }");
+    m_resetButton->setToolTip("Reset all settings to default values and remove from autostart");
+    connect(m_resetButton, &QPushButton::clicked, this, &AboutDialog::resetSettings);
+    
     m_closeButton = new QPushButton("Close");
     m_closeButton->setStyleSheet("QPushButton { padding: 8px 16px; border-radius: 4px; font-weight: bold; }");
     connect(m_closeButton, &QPushButton::clicked, this, &QDialog::accept);
     
     m_buttonLayout->addWidget(m_githubButton);
+    m_buttonLayout->addWidget(m_resetButton);
     m_buttonLayout->addStretch();
     m_buttonLayout->addWidget(m_closeButton);
     
@@ -139,4 +150,54 @@ void AboutDialog::setupUI()
 void AboutDialog::openGitHubPage()
 {
     QDesktopServices::openUrl(QUrl("https://github.com/slohmaier/UIAList"));
+}
+
+void AboutDialog::resetSettings()
+{
+    QMessageBox::StandardButton reply;
+    reply = QMessageBox::question(this, 
+        "Reset All Settings", 
+        "This will:\n\n"
+        "• Reset all application settings to default values\n"
+        "• Remove UIAList from Windows startup\n"
+        "• Reset global shortcut to Ctrl+Alt+U\n"
+        "• Reset default action to Click\n\n"
+        "Are you sure you want to continue?",
+        QMessageBox::Yes | QMessageBox::No,
+        QMessageBox::No);
+    
+    if (reply == QMessageBox::Yes) {
+        // Remove from Windows startup registry
+        removeFromAutoStart();
+        
+        // Clear all application settings
+        QSettings settings("UIAList", "Settings");
+        settings.clear();
+        settings.sync();
+        
+        QMessageBox::information(this, 
+            "Settings Reset", 
+            "All settings have been reset to default values and UIAList has been removed from Windows startup.\n\n"
+            "The application will restart with default settings.");
+        
+        // Close the about dialog
+        accept();
+        
+        // Request application restart
+        QApplication::quit();
+        QProcess::startDetached(QApplication::applicationFilePath(), QStringList());
+    }
+}
+
+void AboutDialog::removeFromAutoStart()
+{
+    HKEY hKey;
+    LONG result = RegOpenKeyEx(HKEY_CURRENT_USER,
+                              L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run",
+                              0, KEY_SET_VALUE, &hKey);
+    
+    if (result == ERROR_SUCCESS) {
+        RegDeleteValue(hKey, L"UIAList");
+        RegCloseKey(hKey);
+    }
 }
