@@ -40,6 +40,7 @@ UIAListIcon::UIAListIcon(QObject *parent)
     qDebug() << "Icon available sizes:" << icon.availableSizes();
     
     m_trayIcon = new QSystemTrayIcon(icon, this);
+    m_trayIcon->setToolTip("UIAList");
     qDebug() << "Tray icon created successfully";
     
     createContextMenu();

@@ -52,6 +52,8 @@ void SettingsDialog::setupUI()
 
     // Auto-start checkbox
     m_autoStartCheckBox = new QCheckBox("Start automatically when Windows starts", this);
+    m_autoStartCheckBox->setAccessibleName("Auto-start with Windows");
+    m_autoStartCheckBox->setAccessibleDescription("When checked, UIAList will start automatically when Windows starts");
     m_mainLayout->addWidget(m_autoStartCheckBox);
 
     // Default action combobox
@@ -62,6 +64,9 @@ void SettingsDialog::setupUI()
     m_defaultActionComboBox->addItem("Click", ActionClick);
     m_defaultActionComboBox->addItem("Double Click", ActionDoubleClick);
     m_defaultActionComboBox->addItem("Focus", ActionFocus);
+    m_defaultActionComboBox->setAccessibleName("Default action");
+    m_defaultActionComboBox->setAccessibleDescription("Choose what action to perform when pressing Enter on a UI element");
+    m_defaultActionLabel->setBuddy(m_defaultActionComboBox);
     m_mainLayout->addWidget(m_defaultActionComboBox);
 
     // Shortcut key editor
