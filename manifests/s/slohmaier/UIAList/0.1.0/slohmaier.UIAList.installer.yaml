@@ -1,0 +1,24 @@
+# Created with YamlCreate.ps1 v2.2.0
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.4.0.schema.json
+
+PackageIdentifier: slohmaier.UIAList
+PackageVersion: 0.1.0
+Platform:
+- Windows.Desktop
+MinimumOSVersion: 10.0.0.0
+InstallerType: wix
+Scope: machine
+InstallModes:
+- interactive
+- silent
+- silentWithProgress
+UpgradeBehavior: install
+Dependencies:
+  PackageDependencies:
+  - PackageIdentifier: Microsoft.VCRedist.2015+.x64
+Installers:
+- Architecture: x64
+  InstallerUrl: https://github.com/slohmaier/UIAList/releases/download/v0.1.0/UIAList-Installer-v0.1.0.msi
+  InstallerSha256: B90B2815C699FD8D75CB9EB873BB788813F5004266E508C4F8618D761D99590F
+ManifestType: installer
+ManifestVersion: 1.4.0

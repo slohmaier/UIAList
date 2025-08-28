@@ -104,3 +104,7 @@ wix-toolset.zip
 
 # Claude Code settings (local only)
 .claude/settings.local.json
+
+# WiX temporary files and extraction directories
+temp/
+*.wxs

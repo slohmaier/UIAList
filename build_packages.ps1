@@ -92,7 +92,7 @@ if (-not $env:VCINSTALLDIR) {
 Write-Host "Visual Studio: $env:VCINSTALLDIR" -ForegroundColor $Cyan
 
 # Check for WiX Toolset (for MSI creation)
-if (-not $MSIOnly -and -not $ZipOnly) {
+if (-not $ZipOnly) {
     try {
         $candle = Get-Command "candle.exe" -ErrorAction Stop
         $light = Get-Command "light.exe" -ErrorAction Stop
@@ -160,7 +160,8 @@ if (-not $SkipBuild) {
 }
 
 # Determine what to build
-$buildMSI = (-not $ZipOnly) -and (Get-Command "candle.exe" -ErrorAction SilentlyContinue)
+$wixAvailable = (Get-Command "candle.exe" -ErrorAction SilentlyContinue) -ne $null
+$buildMSI = (-not $ZipOnly) -and $wixAvailable
 $buildZip = (-not $MSIOnly)
 
 Write-Host ""
@@ -327,9 +328,21 @@ if ($buildMSI) {
                   Schedule="afterInstallInitialize" />
     
     <MediaTemplate EmbedCab="yes" />
+    
+    <!-- WiX UI extension for standard installer interface -->
+    <UI>
+      <UIRef Id="WixUI_InstallDir" />
+    </UI>
+    
+    <!-- Set the installation directory property -->
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+    
+    <!-- Custom dialogs properties -->
+    <Property Id="WIXUI_EXITDIALOGOPTIONALTEXT" Value="Thank you for installing UIAList - UI Automation Control Browser. Press Ctrl+Alt+U to launch the application from anywhere." />
 
     <Feature Id="ProductFeature" Title="UIAList" Level="1">
       <ComponentGroupRef Id="ProductComponents" />
+      <ComponentGroupRef Id="StagingFiles" />
       <ComponentRef Id="ApplicationShortcut" />
       <ComponentRef Id="DesktopShortcut" />
     </Feature>
@@ -345,16 +358,8 @@ if ($buildMSI) {
       <Directory Id="DesktopFolder" Name="Desktop" />
     </Directory>
 
-    <!-- Components -->
+    <!-- Registry and shortcut components only - files handled by heat.exe -->
     <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
-      <!-- Main executable -->
-      <Component Id="UIAListExe" Guid="12345678-ABCD-1234-ABCD-123456789ABC">
-        <File Id="UIAListExeFile" 
-              Source="staging\UIAList.exe" 
-              Checksum="yes" 
-              KeyPath="yes" />
-      </Component>
-      
       <!-- Registry component -->
       <Component Id="UIAListRegistry" Guid="87654321-DCBA-4321-DCBA-987654321CBA">
         <RegistryValue Root="HKLM" 
@@ -383,38 +388,6 @@ if ($buildMSI) {
                        Value="1" 
                        KeyPath="yes" />
       </Component>
-
-      <!-- Qt dependencies -->
-"@
-
-    # Add Qt DLL files dynamically
-    $qtFiles = Get-ChildItem "$msiStagingDir\*.dll" -ErrorAction SilentlyContinue
-    $componentIndex = 1
-    foreach ($dll in $qtFiles) {
-        $wixContent += @"
-
-      <Component Id="QtDll$componentIndex" Guid="*">
-        <File Id="QtDllFile$componentIndex" Source="staging\$($dll.Name)" KeyPath="yes" />
-      </Component>
-"@
-        $componentIndex++
-    }
-
-    # Add other files
-    $otherFiles = @("LICENSE", "README.md", "PrivacyPolicy.html")
-    foreach ($file in $otherFiles) {
-        if (Test-Path "$msiStagingDir\$file") {
-            $safeId = $file -replace "[^a-zA-Z0-9]", ""
-            $wixContent += @"
-
-      <Component Id="File$safeId" Guid="*">
-        <File Id="FileId$safeId" Source="staging\$file" KeyPath="yes" />
-      </Component>
-"@
-        }
-    }
-
-    $wixContent += @"
     </ComponentGroup>
 
     <!-- Desktop shortcut -->
@@ -456,7 +429,6 @@ if ($buildMSI) {
     <Property Id="ARPCONTACT" Value="stefan@slohmaier.de" />
     <Property Id="ARPCOMMENTS" Value="A utility for browsing and inspecting UI Automation controls" />
     <Property Id="ARPNOREPAIR" Value="1" />
-    <Property Id="ARPNOMODIFY" Value="1" />
     
     <!-- winget package identifier -->
     <Property Id="ARPNOREMOVE" Value="0" />
@@ -476,14 +448,20 @@ if ($buildMSI) {
     try {
         Push-Location "$OutputDir\msi"
         
+        Write-Host "Generating file list with heat.exe..." -ForegroundColor $Cyan
+        & heat dir staging -cg StagingFiles -gg -scom -sreg -sfrag -srd -dr INSTALLFOLDER -var var.SourceDir -out StagingFiles.wxs
+        if ($LASTEXITCODE -ne 0) {
+            throw "Heat file generation failed"
+        }
+        
         Write-Host "Compiling WiX source..." -ForegroundColor $Cyan
-        & candle UIAList.wxs -out UIAList.wixobj
+        & candle UIAList.wxs StagingFiles.wxs -dSourceDir=staging
         if ($LASTEXITCODE -ne 0) {
             throw "WiX compilation failed"
         }
         
         Write-Host "Linking MSI package..." -ForegroundColor $Cyan
-        & light UIAList.wixobj -out UIAList.msi -ext WixUIExtension
+        & light UIAList.wixobj StagingFiles.wixobj -out UIAList.msi -ext WixUIExtension
         if ($LASTEXITCODE -ne 0) {
             throw "WiX linking failed"
         }
