@@ -31,7 +31,7 @@ ui_*.h
 qrc_*.cpp
 Thumbs.db
 *.res
-*.rc
+*_resource.rc
 /.qmake.cache
 /.qmake.stash
 
@@ -85,3 +85,22 @@ package_output
 # Generated icon files
 uialist_icon.ico
 uialist_icon.png
+
+# Build and packaging directories
+/build*/
+/dist/
+/build_packages/
+/build_msix/
+package_output/
+
+# Temporary files and downloads
+wix-toolset.zip
+*.zip
+*.msi
+
+# WiX build artifacts
+*.wixobj
+*.wixpdb
+
+# Claude Code settings (local only)
+.claude/settings.local.json
