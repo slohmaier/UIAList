@@ -67,11 +67,11 @@ void UIAList::setupUI()
     // Window title label
     m_windowTitleLabel = new QLabel(this);
     m_windowTitleLabel->setFocusPolicy(Qt::TabFocus);
-    m_windowTitleLabel->setText("No window selected");
+    m_windowTitleLabel->setText(tr("No window selected"));
     
     // Filter edit box
     m_filterEdit = new QLineEdit(this);
-    m_filterEdit->setPlaceholderText("Filter controls...");
+    m_filterEdit->setPlaceholderText(tr("Filter controls..."));
     connect(m_filterEdit, &QLineEdit::textChanged, this, &UIAList::onFilterChanged);
     m_filterEdit->installEventFilter(this);
     
@@ -80,12 +80,12 @@ void UIAList::setupUI()
     connect(m_listWidget, &QListWidget::itemSelectionChanged, this, &UIAList::onItemSelectionChanged);
     
     // Hide empty titles checkbox
-    m_hideEmptyTitlesCheckBox = new QCheckBox("Hide controls with no or empty title", this);
+    m_hideEmptyTitlesCheckBox = new QCheckBox(tr("Hide controls with no or empty title"), this);
     m_hideEmptyTitlesCheckBox->setChecked(true); // Enabled by default
     connect(m_hideEmptyTitlesCheckBox, &QCheckBox::toggled, this, &UIAList::onHideEmptyTitlesChanged);
     
     // Hide menus checkbox
-    m_hideMenusCheckBox = new QCheckBox("Hide menus and menu items", this);
+    m_hideMenusCheckBox = new QCheckBox(tr("Hide menus and menu items"), this);
     m_hideMenusCheckBox->setChecked(true); // Enabled by default
     connect(m_hideMenusCheckBox, &QCheckBox::toggled, this, &UIAList::onHideMenusChanged);
     
@@ -93,9 +93,9 @@ void UIAList::setupUI()
     m_buttonLayout = new QHBoxLayout();
     
     // Double Click, Click, and Focus buttons with accelerator keys (reordered)
-    m_doubleClickButton = new QPushButton("&Double Click", this);
-    m_clickButton = new QPushButton("&Click", this);
-    m_focusButton = new QPushButton("&Focus", this);
+    m_doubleClickButton = new QPushButton(tr("&Double Click"), this);
+    m_clickButton = new QPushButton(tr("&Click"), this);
+    m_focusButton = new QPushButton(tr("&Focus"), this);
     
     connect(m_clickButton, &QPushButton::clicked, this, &UIAList::onClickButtonClicked);
     connect(m_focusButton, &QPushButton::clicked, this, &UIAList::onFocusButtonClicked);
@@ -113,7 +113,7 @@ void UIAList::setupUI()
     m_layout->addWidget(m_hideMenusCheckBox);
     m_layout->addLayout(m_buttonLayout);
     
-    setWindowTitle("UIAList - Screen Reader Control Navigator");
+    setWindowTitle(tr("UIAList - Screen Reader Control Navigator"));
     setWindowIcon(QIcon(":/icons/uialist_icon.png"));
     resize(600, 400);
 }

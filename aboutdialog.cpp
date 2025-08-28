@@ -35,7 +35,7 @@ AboutDialog::AboutDialog(QWidget *parent)
       m_githubButton(nullptr), m_resetButton(nullptr), m_closeButton(nullptr), m_buttonLayout(nullptr)
 {
     setupUI();
-    setWindowTitle("About UIAList");
+    setWindowTitle(tr("About UIAList"));
     setFixedSize(500, 400);
     setModal(true);
 }
@@ -56,7 +56,7 @@ void AboutDialog::setupUI()
         QPixmap iconPixmap = appIcon.pixmap(64, 64);
         m_iconLabel->setPixmap(iconPixmap);
     } else {
-        m_iconLabel->setText("[Icon]");
+        m_iconLabel->setText(tr("[Icon]"));
         m_iconLabel->setStyleSheet("border: 1px solid gray; padding: 20px;");
     }
     m_iconLabel->setAlignment(Qt::AlignCenter);
@@ -65,10 +65,10 @@ void AboutDialog::setupUI()
     // Title and version
     QVBoxLayout *titleLayout = new QVBoxLayout();
     
-    m_titleLabel = new QLabel("UIAList");
+    m_titleLabel = new QLabel(tr("UIAList"));
     m_titleLabel->setStyleSheet("QLabel { font-size: 24px; font-weight: bold; color: palette(text); }");
     
-    m_versionLabel = new QLabel("Accessibility Tool for Screen Reader Users");
+    m_versionLabel = new QLabel(tr("Accessibility Tool for Screen Reader Users"));
     m_versionLabel->setStyleSheet("QLabel { font-size: 14px; color: palette(disabled-text); font-style: italic; }");
     
     titleLayout->addWidget(m_titleLabel);
@@ -88,7 +88,7 @@ void AboutDialog::setupUI()
     m_descriptionText->setMaximumHeight(150);
     
     QString description = 
-        "<p><b>UIAList</b> is an accessibility tool designed for blind and visually impaired users who rely on screen readers like JAWS, NVDA, or Windows Narrator.</p>"
+        tr("<p><b>UIAList</b> is an accessibility tool designed for blind and visually impaired users who rely on screen readers like JAWS, NVDA, or Windows Narrator.</p>"
         "<p>This application lists all controls by name and type for the current application with search functionality to quickly find and interact with controls. It saves significant time by eliminating the need for traditional tabbing navigation that is typical with screen readers.</p>"
         "<p><b>Key Benefits:</b></p>"
         "<ul>"
@@ -96,7 +96,7 @@ void AboutDialog::setupUI()
         "<li>Search controls by name for rapid access</li>"
         "<li>Direct interaction (click, focus, double-click)</li>"
         "<li>Optimized for screen reader users</li>"
-        "</ul>";
+        "</ul>");
     
     m_descriptionText->setHtml(description);
     
@@ -122,16 +122,16 @@ void AboutDialog::setupUI()
     // Buttons
     m_buttonLayout = new QHBoxLayout();
     
-    m_githubButton = new QPushButton("Visit GitHub Repository");
+    m_githubButton = new QPushButton(tr("Visit GitHub Repository"));
     m_githubButton->setStyleSheet("QPushButton { padding: 8px 16px; border-radius: 4px; font-weight: bold; }");
     connect(m_githubButton, &QPushButton::clicked, this, &AboutDialog::openGitHubPage);
     
-    m_resetButton = new QPushButton("Reset All Settings");
+    m_resetButton = new QPushButton(tr("Reset All Settings"));
     m_resetButton->setStyleSheet("QPushButton { padding: 8px 16px; border-radius: 4px; font-weight: bold; background-color: #ff6b6b; color: white; }");
-    m_resetButton->setToolTip("Reset all settings to default values and remove from autostart");
+    m_resetButton->setToolTip(tr("Reset all settings to default values and remove from autostart"));
     connect(m_resetButton, &QPushButton::clicked, this, &AboutDialog::resetSettings);
     
-    m_closeButton = new QPushButton("Close");
+    m_closeButton = new QPushButton(tr("Close"));
     m_closeButton->setStyleSheet("QPushButton { padding: 8px 16px; border-radius: 4px; font-weight: bold; }");
     connect(m_closeButton, &QPushButton::clicked, this, &QDialog::accept);
     
@@ -157,14 +157,14 @@ void AboutDialog::resetSettings()
 {
     QMessageBox::StandardButton reply;
     reply = QMessageBox::question(this, 
-        "Reset All Settings", 
-        "This will:\n\n"
+        tr("Reset All Settings"), 
+        tr("This will:\n\n"
         "• Reset all application settings to default values\n"
         "• Remove UIAList from Windows startup\n"
         "• Reset global shortcut to Ctrl+Alt+U\n"
         "• Reset default action to Click\n"
         "• Show the welcome screen again\n\n"
-        "Are you sure you want to continue?",
+        "Are you sure you want to continue?"),
         QMessageBox::Yes | QMessageBox::No,
         QMessageBox::No);
     
@@ -202,16 +202,16 @@ void AboutDialog::resetSettings()
         
         // Show success message
         QMessageBox::information(mainWindow, 
-            "Settings Reset", 
-            "All settings have been reset to default values and UIAList has been removed from Windows startup.\n\n"
-            "The welcome screen will now appear to help you get started.");
+            tr("Settings Reset"), 
+            tr("All settings have been reset to default values and UIAList has been removed from Windows startup.\n\n"
+            "The welcome screen will now appear to help you get started."));
         
         // Show welcome screen if we found the main window
         if (mainWindow) {
             mainWindow->showWelcomeScreen();
         } else {
-            QMessageBox::warning(nullptr, "Reset Complete", 
-                "Settings have been reset successfully. Please restart the application to see the welcome screen.");
+            QMessageBox::warning(nullptr, tr("Reset Complete"), 
+                tr("Settings have been reset successfully. Please restart the application to see the welcome screen."));
         }
     }
 }

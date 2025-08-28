@@ -40,7 +40,7 @@ UIAListIcon::UIAListIcon(QObject *parent)
     qDebug() << "Icon available sizes:" << icon.availableSizes();
     
     m_trayIcon = new QSystemTrayIcon(icon, this);
-    m_trayIcon->setToolTip("UIAList");
+    m_trayIcon->setToolTip(tr("UIAList"));
     qDebug() << "Tray icon created successfully";
     
     createContextMenu();
@@ -83,17 +83,17 @@ void UIAListIcon::createContextMenu()
 {
     m_contextMenu = new QMenu();
     
-    m_activateAction = new QAction("Activate", this);
+    m_activateAction = new QAction(tr("Activate"), this);
     m_activateAction->setShortcut(m_currentShortcut);
     connect(m_activateAction, &QAction::triggered, this, &UIAListIcon::activate);
 
-    m_settingsAction = new QAction("Settings...", this);
+    m_settingsAction = new QAction(tr("Settings..."), this);
     connect(m_settingsAction, &QAction::triggered, this, &UIAListIcon::showSettings);
     
-    m_aboutAction = new QAction("About...", this);
+    m_aboutAction = new QAction(tr("About..."), this);
     connect(m_aboutAction, &QAction::triggered, this, &UIAListIcon::showAbout);
     
-    m_quitAction = new QAction("Quit", this);
+    m_quitAction = new QAction(tr("Quit"), this);
     connect(m_quitAction, &QAction::triggered, this, &UIAListIcon::quit);
     
     m_contextMenu->addAction(m_activateAction);

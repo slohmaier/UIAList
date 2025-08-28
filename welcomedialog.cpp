@@ -28,7 +28,7 @@ WelcomeDialog::WelcomeDialog(QWidget *parent)
       m_welcomeText(nullptr), m_settingsButton(nullptr), m_closeButton(nullptr), m_buttonLayout(nullptr)
 {
     setupUI();
-    setWindowTitle("Welcome to UIAList");
+    setWindowTitle(tr("Welcome to UIAList"));
     setFixedSize(550, 450);
     setModal(true);
     
@@ -54,7 +54,7 @@ void WelcomeDialog::setupUI()
         QPixmap iconPixmap = appIcon.pixmap(64, 64);
         m_iconLabel->setPixmap(iconPixmap);
     } else {
-        m_iconLabel->setText("[Icon]");
+        m_iconLabel->setText(tr("[Icon]"));
         m_iconLabel->setStyleSheet("border: 1px solid gray; padding: 20px;");
     }
     m_iconLabel->setAlignment(Qt::AlignCenter);
@@ -63,10 +63,10 @@ void WelcomeDialog::setupUI()
     // Title and version
     QVBoxLayout *titleLayout = new QVBoxLayout();
     
-    m_titleLabel = new QLabel("Welcome to UIAList!");
+    m_titleLabel = new QLabel(tr("Welcome to UIAList!"));
     m_titleLabel->setStyleSheet("QLabel { font-size: 24px; font-weight: bold; color: palette(text); }");
     
-    m_versionLabel = new QLabel("Accessibility Tool for Screen Reader Users");
+    m_versionLabel = new QLabel(tr("Accessibility Tool for Screen Reader Users"));
     m_versionLabel->setStyleSheet("QLabel { font-size: 14px; color: palette(disabled-text); font-style: italic; }");
     
     titleLayout->addWidget(m_titleLabel);
@@ -86,7 +86,7 @@ void WelcomeDialog::setupUI()
     m_welcomeText->setMaximumHeight(200);
     
     QString welcomeContent = 
-        "<h3>Thank you for using UIAList!</h3>"
+        tr("<h3>Thank you for using UIAList!</h3>"
         "<p><b>UIAList</b> is designed to make Windows applications more accessible for screen reader users.</p>"
         "<p><b>Getting Started:</b></p>"
         "<ul>"
@@ -100,18 +100,18 @@ void WelcomeDialog::setupUI()
         "<li>UIAList runs in the system tray - look for the icon near your clock</li>"
         "<li>You can customize the default action (Click, Double Click, or Focus) in Settings</li>"
         "<li>The app can start automatically with Windows if desired</li>"
-        "</ul>";
+        "</ul>");
     
     m_welcomeText->setHtml(welcomeContent);
     
     // Buttons
     m_buttonLayout = new QHBoxLayout();
     
-    m_settingsButton = new QPushButton("Open Settings");
+    m_settingsButton = new QPushButton(tr("Open Settings"));
     m_settingsButton->setStyleSheet("QPushButton { padding: 8px 16px; border-radius: 4px; font-weight: bold; }");
     connect(m_settingsButton, &QPushButton::clicked, this, &WelcomeDialog::openSettings);
     
-    m_closeButton = new QPushButton("Get Started");
+    m_closeButton = new QPushButton(tr("Get Started"));
     m_closeButton->setStyleSheet("QPushButton { padding: 8px 16px; border-radius: 4px; font-weight: bold; }");
     m_closeButton->setDefault(true);
     connect(m_closeButton, &QPushButton::clicked, this, &QDialog::accept);

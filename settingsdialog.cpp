@@ -43,7 +43,7 @@ SettingsDialog::~SettingsDialog()
 
 void SettingsDialog::setupUI()
 {
-    setWindowTitle("UIAList Settings");
+    setWindowTitle(tr("UIAList Settings"));
     setWindowIcon(QIcon(":/icons/uialist_icon.png"));
     setModal(true);
     resize(400, 200);
@@ -51,31 +51,31 @@ void SettingsDialog::setupUI()
     m_mainLayout = new QVBoxLayout(this);
 
     // Auto-start checkbox
-    m_autoStartCheckBox = new QCheckBox("Start automatically when Windows starts", this);
-    m_autoStartCheckBox->setAccessibleName("Auto-start with Windows");
-    m_autoStartCheckBox->setAccessibleDescription("When checked, UIAList will start automatically when Windows starts");
+    m_autoStartCheckBox = new QCheckBox(tr("Start automatically when Windows starts"), this);
+    m_autoStartCheckBox->setAccessibleName(tr("Auto-start with Windows"));
+    m_autoStartCheckBox->setAccessibleDescription(tr("When checked, UIAList will start automatically when Windows starts"));
     m_mainLayout->addWidget(m_autoStartCheckBox);
 
     // Default action combobox
-    m_defaultActionLabel = new QLabel("Default action when pressing Enter:", this);
+    m_defaultActionLabel = new QLabel(tr("Default action when pressing Enter:"), this);
     m_mainLayout->addWidget(m_defaultActionLabel);
 
     m_defaultActionComboBox = new QComboBox(this);
-    m_defaultActionComboBox->addItem("Click", ActionClick);
-    m_defaultActionComboBox->addItem("Double Click", ActionDoubleClick);
-    m_defaultActionComboBox->addItem("Focus", ActionFocus);
-    m_defaultActionComboBox->setAccessibleName("Default action");
-    m_defaultActionComboBox->setAccessibleDescription("Choose what action to perform when pressing Enter on a UI element");
+    m_defaultActionComboBox->addItem(tr("Click"), ActionClick);
+    m_defaultActionComboBox->addItem(tr("Double Click"), ActionDoubleClick);
+    m_defaultActionComboBox->addItem(tr("Focus"), ActionFocus);
+    m_defaultActionComboBox->setAccessibleName(tr("Default action"));
+    m_defaultActionComboBox->setAccessibleDescription(tr("Choose what action to perform when pressing Enter on a UI element"));
     m_defaultActionLabel->setBuddy(m_defaultActionComboBox);
     m_mainLayout->addWidget(m_defaultActionComboBox);
 
     // Shortcut key editor
-    m_shortcutLabel = new QLabel("Global shortcut key:", this);
+    m_shortcutLabel = new QLabel(tr("Global shortcut key:"), this);
     m_mainLayout->addWidget(m_shortcutLabel);
 
     m_shortcutButton = new QPushButton(this);
     m_shortcutButton->setText("Ctrl+Alt+U");
-    m_shortcutButton->setToolTip("Click to change shortcut, then press the desired key combination");
+    m_shortcutButton->setToolTip(tr("Click to change shortcut, then press the desired key combination"));
     connect(m_shortcutButton, &QPushButton::clicked, this, &SettingsDialog::onCaptureShortcut);
     m_mainLayout->addWidget(m_shortcutButton);
 
@@ -134,7 +134,7 @@ void SettingsDialog::onCaptureShortcut()
     } else {
         // Start capturing
         m_capturingShortcut = true;
-        m_shortcutButton->setText("Press key combination...");
+        m_shortcutButton->setText(tr("Press key combination..."));
         m_shortcutButton->setStyleSheet("QPushButton { background-color: #ffcccc; }");
         installEventFilter(this);
         setFocus();
