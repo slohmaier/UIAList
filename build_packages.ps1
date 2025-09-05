@@ -4,6 +4,7 @@
 param(
     [string]$Configuration = "Release",
     [string]$OutputDir = "dist",
+    [string[]]$Architectures = @("x64", "arm64"),
     [switch]$SkipBuild = $false,
     [switch]$MSIOnly = $false,
     [switch]$ZipOnly = $false,
@@ -17,8 +18,9 @@ $Yellow = "Yellow"
 $Cyan = "Cyan"
 $Blue = "Blue"
 
-Write-Host "UIAList Package Builder" -ForegroundColor $Green
-Write-Host "======================" -ForegroundColor $Green
+Write-Host "UIAList Multi-Architecture Package Builder" -ForegroundColor $Green
+Write-Host "=========================================" -ForegroundColor $Green
+Write-Host "Building for architectures: $($Architectures -join ', ')" -ForegroundColor $Cyan
 Write-Host ""
 
 # Clean output directory if requested
@@ -35,41 +37,66 @@ New-Item -ItemType Directory -Path "$OutputDir\portable" -Force | Out-Null
 # Check prerequisites
 Write-Host "Checking prerequisites..." -ForegroundColor $Yellow
 
-# Check for Qt
-$qtDir = $env:Qt6_DIR
-if (-not $qtDir) {
-    $qtDir = $env:QTDIR
-}
-
-# Try to detect Qt from common paths if environment variables aren't set
-if (-not $qtDir) {
-    # Check if windeployqt is in PATH (common in Qt command prompt)
-    $windeployqtPath = (Get-Command "windeployqt.exe" -ErrorAction SilentlyContinue)
-    if ($windeployqtPath) {
-        $qtDir = (Split-Path (Split-Path $windeployqtPath.Source -Parent) -Parent)
-        Write-Host "Qt detected from PATH: $qtDir" -ForegroundColor $Cyan
-    } else {
-        # Try common Qt installation paths
-        $commonPaths = @("C:\Qt\6.9\msvc2022_64", "C:\Qt\6.8\msvc2022_64", "C:\Qt\6.7\msvc2022_64")
+# Check for Qt for each architecture
+$qtDirs = @{}
+foreach ($arch in $Architectures) {
+    $qtDir = $null
+    
+    # Map architecture names
+    $qtArchName = switch ($arch) {
+        "x64" { "msvc2022_64" }
+        "arm64" { "msvc2022_arm64" }
+        default { $arch }
+    }
+    
+    # Try environment variables first
+    if ($arch -eq "x64") {
+        $qtDir = $env:Qt6_DIR_x64
+        if (-not $qtDir) { $qtDir = $env:Qt6_DIR }
+    } elseif ($arch -eq "arm64") {
+        $qtDir = $env:Qt6_DIR_ARM64
+    }
+    
+    # Try common Qt installation paths
+    if (-not $qtDir) {
+        $commonPaths = @(
+            "C:\Qt\6.9.2\$qtArchName",
+            "C:\Qt\6.9\$qtArchName",
+            "C:\Qt\6.8\$qtArchName",
+            "C:\Qt\6.7\$qtArchName",
+            "C:\Qt\6.6\$qtArchName"
+        )
         foreach ($path in $commonPaths) {
-            if (Test-Path "$path\bin\windeployqt.exe") {
-                $qtDir = $path
-                Write-Host "Qt detected at: $qtDir" -ForegroundColor $Cyan
-                break
+            # For ARM64, check for Qt installation without requiring windeployqt
+            if ($arch -eq "arm64") {
+                if (Test-Path "$path\bin\Qt6Core.dll") {
+                    $qtDir = $path
+                    break
+                }
+            } else {
+                # For x64, require windeployqt
+                if (Test-Path "$path\bin\windeployqt.exe") {
+                    $qtDir = $path
+                    break
+                }
             }
         }
     }
+    
+    if (-not $qtDir) {
+        Write-Host "Qt installation for $arch not found. Skipping $arch build." -ForegroundColor $Yellow
+        $Architectures = $Architectures | Where-Object { $_ -ne $arch }
+    } else {
+        $qtDirs[$arch] = $qtDir
+        Write-Host "Qt directory for ${arch}: $qtDir" -ForegroundColor $Cyan
+    }
 }
 
-if (-not $qtDir) {
-    Write-Host "Qt installation not found. Please:" -ForegroundColor $Red
-    Write-Host "1. Run from Qt command prompt, or" -ForegroundColor $Red
-    Write-Host "2. Set Qt6_DIR or QTDIR environment variable, or" -ForegroundColor $Red
-    Write-Host "3. Ensure windeployqt.exe is in your PATH" -ForegroundColor $Red
+if ($qtDirs.Count -eq 0) {
+    Write-Host "No Qt installations found for any architecture." -ForegroundColor $Red
+    Write-Host "Please install Qt for x64 and/or ARM64 to C:\Qt" -ForegroundColor $Red
     exit 1
 }
-
-Write-Host "Qt directory: $qtDir" -ForegroundColor $Cyan
 
 # Check for CMake
 try {
@@ -99,7 +126,15 @@ if (-not $ZipOnly) {
         Write-Host "WiX Toolset found: $($candle.Source)" -ForegroundColor $Cyan
     } catch {
         # Try looking in common WiX installation paths
-        $wixPaths = @("C:\WiX", "C:\Program Files (x86)\WiX Toolset v3.11\bin", "C:\Program Files (x86)\WiX Toolset v3.14\bin")
+        $wixPaths = @(
+            "C:\WiX",
+            "C:\Program Files (x86)\WiX Toolset v3.11\bin",
+            "C:\Program Files (x86)\WiX Toolset v3.14\bin",
+            "C:\Program Files\WiX Toolset v3.11\bin",
+            "C:\Program Files\WiX Toolset v3.14\bin",
+            "C:\Program Files (x86)\WiX Toolset\bin",
+            "C:\Program Files\WiX Toolset\bin"
+        )
         $wixFound = $false
         foreach ($path in $wixPaths) {
             if ((Test-Path "$path\candle.exe") -and (Test-Path "$path\light.exe")) {
@@ -121,39 +156,53 @@ if (-not $ZipOnly) {
 Write-Host ""
 
 if (-not $SkipBuild) {
-    Write-Host "Building UIAList..." -ForegroundColor $Yellow
-    
-    # Create build directory
-    $buildDir = "build_packages"
-    if (Test-Path $buildDir) {
-        Remove-Item $buildDir -Recurse -Force
-    }
-    New-Item -ItemType Directory -Path $buildDir -Force | Out-Null
-    
-    # Configure with CMake
-    Push-Location $buildDir
-    try {
-        Write-Host "Configuring build with CMake..." -ForegroundColor $Cyan
-        & "C:\Qt\Tools\CMake_64\bin\cmake.exe" .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=$Configuration
-        if ($LASTEXITCODE -ne 0) {
-            throw "CMake configuration failed"
+    foreach ($arch in $Architectures) {
+        Write-Host "" 
+        Write-Host "Building UIAList for $arch..." -ForegroundColor $Yellow
+        
+        # Create architecture-specific build directory
+        $buildDir = "build_packages_$arch"
+        if (Test-Path $buildDir) {
+            Remove-Item $buildDir -Recurse -Force
+        }
+        New-Item -ItemType Directory -Path $buildDir -Force | Out-Null
+        
+        # Map architecture to CMake generator platform
+        $cmakeArch = switch ($arch) {
+            "x64" { "x64" }
+            "arm64" { "ARM64" }
+            default { $arch }
         }
         
-        # Build the project
-        Write-Host "Building project..." -ForegroundColor $Cyan
-        & "C:\Qt\Tools\CMake_64\bin\cmake.exe" --build . --config $Configuration --target UIAList
-        if ($LASTEXITCODE -ne 0) {
-            throw "Build failed"
+        # Configure with CMake
+        Push-Location $buildDir
+        try {
+            Write-Host "Configuring build with CMake for $arch..." -ForegroundColor $Cyan
+            
+            # Set Qt prefix path for this architecture
+            $qtPrefix = $qtDirs[$arch]
+            
+            & "C:\Qt\Tools\CMake_64\bin\cmake.exe" .. -G "Visual Studio 17 2022" -A $cmakeArch -DCMAKE_BUILD_TYPE=$Configuration -DCMAKE_PREFIX_PATH="$qtPrefix"
+            if ($LASTEXITCODE -ne 0) {
+                throw "CMake configuration failed for $arch"
+            }
+            
+            # Build the project
+            Write-Host "Building project for $arch..." -ForegroundColor $Cyan
+            & "C:\Qt\Tools\CMake_64\bin\cmake.exe" --build . --config $Configuration --target UIAList
+            if ($LASTEXITCODE -ne 0) {
+                throw "Build failed for $arch"
+            }
+            
+            Write-Host "Build completed successfully for $arch!" -ForegroundColor $Green
+            
+        } catch {
+            Write-Host "Build failed for ${arch}: $_" -ForegroundColor $Red
+            Pop-Location
+            exit 1
+        } finally {
+            Pop-Location
         }
-        
-        Write-Host "Build completed successfully!" -ForegroundColor $Green
-        
-    } catch {
-        Write-Host "Build failed: $_" -ForegroundColor $Red
-        Pop-Location
-        exit 1
-    } finally {
-        Pop-Location
     }
 } else {
     Write-Host "Skipping build as requested." -ForegroundColor $Yellow
@@ -170,43 +219,141 @@ Write-Host "MSI Installer: $(if ($buildMSI) { 'Yes' } else { 'No' })" -Foregroun
 Write-Host "Portable ZIP: $(if ($buildZip) { 'Yes' } else { 'No' })" -ForegroundColor $Cyan
 Write-Host ""
 
+# Manual ARM64 deployment function
+function Deploy-ARM64-Manually {
+    param(
+        [string]$StagingPath,
+        [string]$QtDir
+    )
+    
+    Write-Host "Manually deploying Qt ARM64 dependencies..." -ForegroundColor $Cyan
+    
+    # Core Qt libraries needed for UIAList
+    $qtLibraries = @(
+        "Qt6Core.dll",
+        "Qt6Gui.dll", 
+        "Qt6Widgets.dll",
+        "Qt6Network.dll",
+        "Qt6Svg.dll"
+    )
+    
+    $qtBinDir = Join-Path $QtDir "bin"
+    
+    # Copy Qt DLLs
+    foreach ($lib in $qtLibraries) {
+        $libPath = Join-Path $qtBinDir $lib
+        if (Test-Path $libPath) {
+            Copy-Item $libPath $StagingPath -Force
+            Write-Host "  Copied $lib" -ForegroundColor $Cyan
+        } else {
+            Write-Host "  Warning: $lib not found at $libPath" -ForegroundColor $Yellow
+        }
+    }
+    
+    # Copy Visual C++ Redistributable
+    $vcRedist = Join-Path $qtBinDir "vc_redist.x64.exe"
+    if (Test-Path $vcRedist) {
+        Copy-Item $vcRedist $StagingPath -Force
+        Write-Host "  Copied vc_redist.x64.exe" -ForegroundColor $Cyan
+    }
+    
+    # Copy essential plugins
+    $pluginDirs = @(
+        @{Source = "platforms"; Files = @("qwindows.dll")},
+        @{Source = "imageformats"; Files = @("qgif.dll", "qico.dll", "qjpeg.dll", "qsvg.dll")},
+        @{Source = "iconengines"; Files = @("qsvgicon.dll")},
+        @{Source = "styles"; Files = @("qmodernwindowsstyle.dll")}
+    )
+    
+    $qtPluginDir = Join-Path $QtDir "plugins"
+    
+    foreach ($pluginDir in $pluginDirs) {
+        $sourceDir = Join-Path $qtPluginDir $pluginDir.Source
+        $targetDir = Join-Path $StagingPath $pluginDir.Source
+        
+        if (Test-Path $sourceDir) {
+            New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
+            
+            foreach ($file in $pluginDir.Files) {
+                $sourceFile = Join-Path $sourceDir $file
+                if (Test-Path $sourceFile) {
+                    Copy-Item $sourceFile $targetDir -Force
+                    Write-Host "  Copied plugin $($pluginDir.Source)\$file" -ForegroundColor $Cyan
+                }
+            }
+        }
+    }
+    
+    Write-Host "Manual ARM64 deployment completed." -ForegroundColor $Green
+}
+
 # Common staging function
 function Create-StagingArea {
-    param([string]$StagingPath)
+    param(
+        [string]$StagingPath,
+        [string]$Architecture
+    )
     
     # Create staging directory
     New-Item -ItemType Directory -Path $StagingPath -Force | Out-Null
     
     # Copy the main executable
-    $exePath = "build_packages\$Configuration\UIAList.exe"
+    $exePath = "build_packages_$Architecture\$Configuration\UIAList.exe"
     if (Test-Path $exePath) {
         Copy-Item $exePath $StagingPath -Force
-        Write-Host "Copied UIAList.exe" -ForegroundColor $Cyan
+        Write-Host "Copied UIAList.exe ($Architecture)" -ForegroundColor $Cyan
     } else {
-        throw "UIAList.exe not found at $exePath"
+        throw "UIAList.exe not found at $exePath for $Architecture"
     }
     
     # Use windeployqt to copy Qt dependencies
-    $qtBinDir = $null
-    if ($qtDir) {
-        $qtBinDir = Join-Path $qtDir "bin"
-        if (-not (Test-Path $qtBinDir)) {
-            # Try alternative Qt directory structures
-            $qtBinDir = Join-Path $qtDir ".." ".." ".." "bin"
-        }
-    }
+    $qtDir = $qtDirs[$Architecture]
     
-    if ($qtBinDir -and (Test-Path $qtBinDir)) {
-        $windeployqt = Join-Path $qtBinDir "windeployqt.exe"
-        if (Test-Path $windeployqt) {
-            Write-Host "Running windeployqt..." -ForegroundColor $Cyan
-            $targetExe = Join-Path $StagingPath "UIAList.exe"
-            & "$windeployqt" "$targetExe" --release --no-translations --no-system-d3d-compiler --no-opengl-sw --dir "$StagingPath"
-            if ($LASTEXITCODE -ne 0) {
-                Write-Host "windeployqt failed, but continuing..." -ForegroundColor $Yellow
+    if ($Architecture -eq "arm64") {
+        # For ARM64, use x64 windeployqt if available, or manual deployment
+        $x64QtDir = $qtDirs["x64"]
+        if ($x64QtDir) {
+            $windeployqt = Join-Path $x64QtDir "bin\windeployqt.exe"
+            if (Test-Path $windeployqt) {
+                Write-Host "Running x64 windeployqt for ARM64 binary..." -ForegroundColor $Cyan
+                $targetExe = Join-Path $StagingPath "UIAList.exe"
+                & "$windeployqt" "$targetExe" --release --no-translations --no-system-d3d-compiler --no-opengl-sw --dir "$StagingPath" --force
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Host "windeployqt failed for ARM64, falling back to manual deployment..." -ForegroundColor $Yellow
+                    # Manual deployment for ARM64
+                    Deploy-ARM64-Manually -StagingPath $StagingPath -QtDir $qtDir
+                }
+            } else {
+                Write-Host "x64 windeployqt not found, using manual ARM64 deployment..." -ForegroundColor $Yellow
+                Deploy-ARM64-Manually -StagingPath $StagingPath -QtDir $qtDir
             }
         } else {
-            Write-Host "windeployqt not found, manual Qt deployment needed" -ForegroundColor $Yellow
+            Write-Host "x64 Qt not available, using manual ARM64 deployment..." -ForegroundColor $Yellow
+            Deploy-ARM64-Manually -StagingPath $StagingPath -QtDir $qtDir
+        }
+    } else {
+        # For x64, use standard windeployqt
+        $qtBinDir = $null
+        if ($qtDir) {
+            $qtBinDir = Join-Path $qtDir "bin"
+            if (-not (Test-Path $qtBinDir)) {
+                # Try alternative Qt directory structures
+                $qtBinDir = Join-Path $qtDir ".." ".." ".." "bin"
+            }
+        }
+        
+        if ($qtBinDir -and (Test-Path $qtBinDir)) {
+            $windeployqt = Join-Path $qtBinDir "windeployqt.exe"
+            if (Test-Path $windeployqt) {
+                Write-Host "Running windeployqt for $Architecture..." -ForegroundColor $Cyan
+                $targetExe = Join-Path $StagingPath "UIAList.exe"
+                & "$windeployqt" "$targetExe" --release --no-translations --no-system-d3d-compiler --no-opengl-sw --dir "$StagingPath"
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Host "windeployqt failed for $Architecture, but continuing..." -ForegroundColor $Yellow
+                }
+            } else {
+                Write-Host "windeployqt not found for $Architecture, manual Qt deployment needed" -ForegroundColor $Yellow
+            }
         }
     }
     
@@ -222,12 +369,14 @@ function Create-StagingArea {
     Write-Host "Staging area created: $StagingPath" -ForegroundColor $Green
 }
 
-# Create portable ZIP package
+# Create portable ZIP packages for each architecture
 if ($buildZip) {
-    Write-Host "Creating portable ZIP package..." -ForegroundColor $Blue
-    
-    $zipStagingDir = "$OutputDir\portable\UIAList-Portable"
-    Create-StagingArea $zipStagingDir
+    foreach ($arch in $Architectures) {
+        Write-Host ""
+        Write-Host "Creating portable ZIP package for $arch..." -ForegroundColor $Blue
+        
+        $zipStagingDir = "$OutputDir\portable\UIAList-Portable-$arch"
+        Create-StagingArea -StagingPath $zipStagingDir -Architecture $arch
     
     # Create a simple batch file to run the application
     $batchContent = @"
@@ -286,28 +435,31 @@ UIAList Portable v0.1.0
 "@
     Set-Content -Path "$zipStagingDir\README-Portable.txt" -Value $portableReadme -Encoding UTF8
     
-    # Create the ZIP file
-    $zipFile = "$OutputDir\UIAList-Portable-v0.1.0.zip"
-    try {
-        Compress-Archive -Path "$zipStagingDir\*" -DestinationPath $zipFile -Force
-        Write-Host "Portable ZIP created: $zipFile" -ForegroundColor $Green
-        
-        $zipSize = (Get-Item $zipFile).Length / 1MB
-        Write-Host "ZIP size: $([math]::Round($zipSize, 2)) MB" -ForegroundColor $Cyan
-    } catch {
-        Write-Host "Failed to create ZIP file: $_" -ForegroundColor $Red
+        # Create the ZIP file
+        $zipFile = "$OutputDir\UIAList-Portable-v0.1.0-$arch.zip"
+        try {
+            Compress-Archive -Path "$zipStagingDir\*" -DestinationPath $zipFile -Force
+            Write-Host "Portable ZIP created: $zipFile" -ForegroundColor $Green
+            
+            $zipSize = (Get-Item $zipFile).Length / 1MB
+            Write-Host "ZIP size: $([math]::Round($zipSize, 2)) MB" -ForegroundColor $Cyan
+        } catch {
+            Write-Host "Failed to create ZIP file for ${arch}: $_" -ForegroundColor $Red
+        }
     }
 }
 
-# Create MSI installer package
+# Create MSI installer packages for each architecture
 if ($buildMSI) {
-    Write-Host "Creating MSI installer package..." -ForegroundColor $Blue
+    foreach ($arch in $Architectures) {
+        Write-Host ""
+        Write-Host "Creating MSI installer package for $arch..." -ForegroundColor $Blue
+        
+        $msiStagingDir = "$OutputDir\msi\staging_$arch"
+        Create-StagingArea -StagingPath $msiStagingDir -Architecture $arch
     
-    $msiStagingDir = "$OutputDir\msi\staging"
-    Create-StagingArea $msiStagingDir
-    
-    # Create WiX source file
-    $wixFile = "$OutputDir\msi\UIAList.wxs"
+        # Create WiX source file
+        $wixFile = "$OutputDir\msi\UIAList_$arch.wxs"
     $wixContent = @"
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
@@ -420,7 +572,7 @@ if ($buildMSI) {
     </Component>
 
     <!-- Icon -->
-    <Icon Id="UIAList.exe" SourceFile="staging\UIAList.exe" />
+    <Icon Id="UIAList.exe" SourceFile="staging_$arch\UIAList.exe" />
 
     <!-- Properties for winget compatibility -->
     <Property Id="ARPPRODUCTICON" Value="UIAList.exe" />
@@ -441,45 +593,46 @@ if ($buildMSI) {
 </Wix>
 "@
 
-    Set-Content -Path $wixFile -Value $wixContent -Encoding UTF8
-    Write-Host "WiX source file created: $wixFile" -ForegroundColor $Cyan
+        Set-Content -Path $wixFile -Value $wixContent -Encoding UTF8
+        Write-Host "WiX source file created: $wixFile" -ForegroundColor $Cyan
 
-    # Compile WiX
-    try {
-        Push-Location "$OutputDir\msi"
-        
-        Write-Host "Generating file list with heat.exe..." -ForegroundColor $Cyan
-        & heat dir staging -cg StagingFiles -gg -scom -sreg -sfrag -srd -dr INSTALLFOLDER -var var.SourceDir -out StagingFiles.wxs
-        if ($LASTEXITCODE -ne 0) {
-            throw "Heat file generation failed"
+        # Compile WiX
+        try {
+            Push-Location "$OutputDir\msi"
+            
+            Write-Host "Generating file list with heat.exe for $arch..." -ForegroundColor $Cyan
+            & heat dir "staging_$arch" -cg StagingFiles -gg -scom -sreg -sfrag -srd -dr INSTALLFOLDER -var var.SourceDir -out "StagingFiles_$arch.wxs"
+            if ($LASTEXITCODE -ne 0) {
+                throw "Heat file generation failed for $arch"
+            }
+            
+            Write-Host "Compiling WiX source for $arch..." -ForegroundColor $Cyan
+            & candle "UIAList_$arch.wxs" "StagingFiles_$arch.wxs" -dSourceDir="staging_$arch"
+            if ($LASTEXITCODE -ne 0) {
+                throw "WiX compilation failed for $arch"
+            }
+            
+            Write-Host "Linking MSI package for $arch..." -ForegroundColor $Cyan
+            & light "UIAList_$arch.wixobj" "StagingFiles_$arch.wixobj" -out "UIAList_$arch.msi" -ext WixUIExtension
+            if ($LASTEXITCODE -ne 0) {
+                throw "WiX linking failed for $arch"
+            }
+            
+            # Move MSI to main output directory
+            $finalMSI = "..\UIAList-Installer-v0.1.0-$arch.msi"
+            Move-Item "UIAList_$arch.msi" $finalMSI -Force
+            
+            Pop-Location
+            
+            Write-Host "MSI installer created: $OutputDir\UIAList-Installer-v0.1.0-$arch.msi" -ForegroundColor $Green
+            
+            $msiSize = (Get-Item "$OutputDir\UIAList-Installer-v0.1.0-$arch.msi").Length / 1MB
+            Write-Host "MSI size: $([math]::Round($msiSize, 2)) MB" -ForegroundColor $Cyan
+            
+        } catch {
+            Write-Host "Failed to create MSI for ${arch}: $_" -ForegroundColor $Red
+            Pop-Location
         }
-        
-        Write-Host "Compiling WiX source..." -ForegroundColor $Cyan
-        & candle UIAList.wxs StagingFiles.wxs -dSourceDir=staging
-        if ($LASTEXITCODE -ne 0) {
-            throw "WiX compilation failed"
-        }
-        
-        Write-Host "Linking MSI package..." -ForegroundColor $Cyan
-        & light UIAList.wixobj StagingFiles.wixobj -out UIAList.msi -ext WixUIExtension
-        if ($LASTEXITCODE -ne 0) {
-            throw "WiX linking failed"
-        }
-        
-        # Move MSI to main output directory
-        $finalMSI = "..\UIAList-Installer-v0.1.0.msi"
-        Move-Item "UIAList.msi" $finalMSI -Force
-        
-        Pop-Location
-        
-        Write-Host "MSI installer created: $OutputDir\UIAList-Installer-v0.1.0.msi" -ForegroundColor $Green
-        
-        $msiSize = (Get-Item "$OutputDir\UIAList-Installer-v0.1.0.msi").Length / 1MB
-        Write-Host "MSI size: $([math]::Round($msiSize, 2)) MB" -ForegroundColor $Cyan
-        
-    } catch {
-        Write-Host "Failed to create MSI: $_" -ForegroundColor $Red
-        Pop-Location
     }
 }
 
@@ -494,12 +647,14 @@ Write-Host "Output directory: $OutputDir" -ForegroundColor $Cyan
 Write-Host ""
 Write-Host "Created packages:" -ForegroundColor $Yellow
 
-if ($buildZip -and (Test-Path "$OutputDir\UIAList-Portable-v0.1.0.zip")) {
-    Write-Host "✓ Portable ZIP: UIAList-Portable-v0.1.0.zip" -ForegroundColor $Green
-}
-
-if ($buildMSI -and (Test-Path "$OutputDir\UIAList-Installer-v0.1.0.msi")) {
-    Write-Host "✓ MSI Installer: UIAList-Installer-v0.1.0.msi" -ForegroundColor $Green
+foreach ($arch in $Architectures) {
+    if ($buildZip -and (Test-Path "$OutputDir\UIAList-Portable-v0.1.0-$arch.zip")) {
+        Write-Host "✓ Portable ZIP ($arch): UIAList-Portable-v0.1.0-$arch.zip" -ForegroundColor $Green
+    }
+    
+    if ($buildMSI -and (Test-Path "$OutputDir\UIAList-Installer-v0.1.0-$arch.msi")) {
+        Write-Host "✓ MSI Installer ($arch): UIAList-Installer-v0.1.0-$arch.msi" -ForegroundColor $Green
+    }
 }
 
 Write-Host ""
