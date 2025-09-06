@@ -8,6 +8,7 @@ param(
     [switch]$SkipBuild = $false,
     [switch]$MSIOnly = $false,
     [switch]$ZipOnly = $false,
+    [switch]$MSIXOnly = $false,
     [switch]$Clean = $false
 )
 
@@ -119,14 +120,19 @@ if (-not $env:VCINSTALLDIR) {
 Write-Host "Visual Studio: $env:VCINSTALLDIR" -ForegroundColor $Cyan
 
 # Check for WiX Toolset (for MSI creation)
+$global:wixExe = $null
 if (-not $ZipOnly) {
     try {
-        $candle = Get-Command "candle.exe" -ErrorAction Stop
-        $light = Get-Command "light.exe" -ErrorAction Stop
-        Write-Host "WiX Toolset found: $($candle.Source)" -ForegroundColor $Cyan
+        # First try to find wix.exe (WiX v6.0+)
+        $wixExe = Get-Command "wix.exe" -ErrorAction Stop
+        $global:wixExe = $wixExe.Source
+        Write-Host "WiX Toolset v6.0+ found: $($wixExe.Source)" -ForegroundColor $Cyan
     } catch {
         # Try looking in common WiX installation paths
         $wixPaths = @(
+            "C:\Program Files\WiX Toolset v6.0\bin",
+            "C:\Program Files (x86)\WiX Toolset v6.0\bin",
+            "C:\Program Files\dotnet\tools",
             "C:\WiX",
             "C:\Program Files (x86)\WiX Toolset v3.11\bin",
             "C:\Program Files (x86)\WiX Toolset v3.14\bin",
@@ -137,9 +143,18 @@ if (-not $ZipOnly) {
         )
         $wixFound = $false
         foreach ($path in $wixPaths) {
-            if ((Test-Path "$path\candle.exe") -and (Test-Path "$path\light.exe")) {
+            # Check for WiX v6.0+ first
+            if (Test-Path "$path\wix.exe") {
                 $env:PATH = $env:PATH + ";$path"
-                Write-Host "WiX Toolset found: $path" -ForegroundColor $Cyan
+                $global:wixExe = "$path\wix.exe"
+                Write-Host "WiX Toolset v6.0+ found: $path" -ForegroundColor $Cyan
+                $wixFound = $true
+                break
+            }
+            # Fallback to WiX v3.x
+            elseif ((Test-Path "$path\candle.exe") -and (Test-Path "$path\light.exe")) {
+                $env:PATH = $env:PATH + ";$path"
+                Write-Host "WiX Toolset v3.x found: $path" -ForegroundColor $Cyan
                 $wixFound = $true
                 break
             }
@@ -208,15 +223,48 @@ if (-not $SkipBuild) {
     Write-Host "Skipping build as requested." -ForegroundColor $Yellow
 }
 
+# Check for MSIX Packaging Tool
+$msixAvailable = $false
+try {
+    $makeappx = Get-Command "makeappx.exe" -ErrorAction Stop
+    Write-Host "MSIX Packaging Tool found: $($makeappx.Source)" -ForegroundColor $Cyan
+    $msixAvailable = $true
+} catch {
+    # Try looking in Windows SDK paths
+    $sdkPaths = @(
+        "C:\Program Files (x86)\Windows Kits\10\bin\*\x64",
+        "C:\Program Files\Windows Kits\10\bin\*\x64"
+    )
+    foreach ($sdkPattern in $sdkPaths) {
+        $sdkDirs = Get-ChildItem $sdkPattern -Directory -ErrorAction SilentlyContinue | Sort-Object Name -Descending
+        foreach ($sdkDir in $sdkDirs) {
+            $makeappxPath = Join-Path $sdkDir "makeappx.exe"
+            if (Test-Path $makeappxPath) {
+                $env:PATH = $env:PATH + ";$sdkDir"
+                Write-Host "MSIX Packaging Tool found: $makeappxPath" -ForegroundColor $Cyan
+                $msixAvailable = $true
+                break
+            }
+        }
+        if ($msixAvailable) { break }
+    }
+    
+    if (-not $msixAvailable) {
+        Write-Host "MSIX Packaging Tool not found. MSIX creation will be skipped." -ForegroundColor $Yellow
+    }
+}
+
 # Determine what to build
-$wixAvailable = (Get-Command "candle.exe" -ErrorAction SilentlyContinue) -ne $null
-$buildMSI = (-not $ZipOnly) -and $wixAvailable
-$buildZip = (-not $MSIOnly)
+$wixAvailable = $global:wixExe -ne $null -or (Get-Command "candle.exe" -ErrorAction SilentlyContinue) -ne $null
+$buildMSI = (-not $ZipOnly) -and (-not $MSIXOnly) -and $wixAvailable
+$buildZip = (-not $MSIOnly) -and (-not $MSIXOnly)
+$buildMSIX = ((-not $ZipOnly) -and (-not $MSIOnly) -and $msixAvailable) -or $MSIXOnly
 
 Write-Host ""
 Write-Host "Creating packages..." -ForegroundColor $Yellow
 Write-Host "MSI Installer: $(if ($buildMSI) { 'Yes' } else { 'No' })" -ForegroundColor $Cyan
 Write-Host "Portable ZIP: $(if ($buildZip) { 'Yes' } else { 'No' })" -ForegroundColor $Cyan
+Write-Host "MSIX Package: $(if ($buildMSIX) { 'Yes' } else { 'No' })" -ForegroundColor $Cyan
 Write-Host ""
 
 # Manual ARM64 deployment function
@@ -462,165 +510,184 @@ if ($buildMSI) {
         $wixFile = "$OutputDir\msi\UIAList_$arch.wxs"
     $wixContent = @"
 <?xml version="1.0" encoding="UTF-8"?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <Product Id="*" 
-           Name="UIAList" 
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="UIAList" 
            Language="1033" 
            Version="0.1.0.0" 
-           Manufacturer="Stefan Lohmaier" 
+           Manufacturer="Stefan Lohmaier"
            UpgradeCode="12345678-1234-5678-9ABC-123456789ABC">
     
-    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" 
-             Description="UIAList - UI Automation Control Browser" 
-             Comments="A utility for browsing and inspecting UI Automation controls"
-             Keywords="UIAList,UI Automation,Accessibility,Inspector" />
+    <SummaryInformation Description="UIAList - UI Automation Control Browser" 
+                       Comments="A utility for browsing and inspecting UI Automation controls"
+                       Keywords="UIAList,UI Automation,Accessibility,Inspector" />
     
-    <!-- Upgrade handling - removes older versions automatically -->
-    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed."
-                  Schedule="afterInstallInitialize" />
+    <!-- Upgrade handling -->
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
     
-    <MediaTemplate EmbedCab="yes" />
+    <!-- Media -->
+    <Media Id="1" Cabinet="product.cab" EmbedCab="yes" />
     
-    <!-- WiX UI extension for standard installer interface -->
-    <UI>
-      <UIRef Id="WixUI_InstallDir" />
-    </UI>
-    
-    <!-- Set the installation directory property -->
-    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
-    
-    <!-- Custom dialogs properties -->
-    <Property Id="WIXUI_EXITDIALOGOPTIONALTEXT" Value="Thank you for installing UIAList - UI Automation Control Browser. Press Ctrl+Alt+U to launch the application from anywhere." />
-
-    <Feature Id="ProductFeature" Title="UIAList" Level="1">
-      <ComponentGroupRef Id="ProductComponents" />
-      <ComponentGroupRef Id="StagingFiles" />
-      <ComponentRef Id="ApplicationShortcut" />
-      <ComponentRef Id="DesktopShortcut" />
-    </Feature>
-
-    <!-- Directory structure -->
-    <Directory Id="TARGETDIR" Name="SourceDir">
-      <Directory Id="ProgramFilesFolder">
-        <Directory Id="INSTALLFOLDER" Name="UIAList" />
-      </Directory>
-      <Directory Id="ProgramMenuFolder">
-        <Directory Id="ApplicationProgramsFolder" Name="UIAList" />
-      </Directory>
-      <Directory Id="DesktopFolder" Name="Desktop" />
-    </Directory>
-
-    <!-- Registry and shortcut components only - files handled by heat.exe -->
-    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
-      <!-- Registry component -->
-      <Component Id="UIAListRegistry" Guid="87654321-DCBA-4321-DCBA-987654321CBA">
-        <RegistryValue Root="HKLM" 
-                       Key="Software\Stefan Lohmaier\UIAList" 
-                       Name="InstallPath" 
-                       Type="string" 
-                       Value="[INSTALLFOLDER]" 
-                       KeyPath="yes" />
-      </Component>
-      
-      <!-- Start menu shortcut as separate component -->
-      <Component Id="StartMenuShortcut" Guid="11111111-2222-3333-4444-555555555555">
-        <Shortcut Id="StartMenuShortcutFile" 
-                  Directory="ApplicationProgramsFolder" 
-                  Name="UIAList"
-                  Description="UI Automation Control Browser"
-                  Target="[INSTALLFOLDER]UIAList.exe"
-                  WorkingDirectory="INSTALLFOLDER"
-                  Icon="UIAList.exe"
-                  IconIndex="0" />
-        
-        <RegistryValue Root="HKCU" 
-                       Key="Software\Stefan Lohmaier\UIAList" 
-                       Name="StartMenuShortcut" 
-                       Type="integer" 
-                       Value="1" 
-                       KeyPath="yes" />
-      </Component>
-    </ComponentGroup>
-
-    <!-- Desktop shortcut -->
-    <Component Id="DesktopShortcut" Directory="DesktopFolder" Guid="AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE">
-      <Shortcut Id="DesktopShortcutFile"
-                Name="UIAList"
-                Description="UI Automation Control Browser"
-                Target="[INSTALLFOLDER]UIAList.exe"
-                WorkingDirectory="INSTALLFOLDER"
-                Icon="UIAList.exe"
-                IconIndex="0" />
-      <RemoveFolder Id="DesktopFolder" On="uninstall" />
-      <RegistryValue Root="HKCU" 
-                     Key="Software\Stefan Lohmaier\UIAList" 
-                     Name="DesktopShortcut" 
-                     Type="integer" 
-                     Value="1" 
-                     KeyPath="yes" />
-    </Component>
-
-    <!-- Start menu folder cleanup -->
-    <Component Id="ApplicationShortcut" Directory="ApplicationProgramsFolder" Guid="BBBBBBBB-CCCC-DDDD-EEEE-FFFFFFFFFFFF">
-      <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall" />
-      <RegistryValue Root="HKCU" 
-                     Key="Software\Stefan Lohmaier\UIAList" 
-                     Name="ApplicationShortcut" 
-                     Type="integer" 
-                     Value="1" 
-                     KeyPath="yes" />
-    </Component>
-
-    <!-- Icon -->
-    <Icon Id="UIAList.exe" SourceFile="staging_$arch\UIAList.exe" />
-
-    <!-- Properties for winget compatibility -->
+    <!-- Properties -->
     <Property Id="ARPPRODUCTICON" Value="UIAList.exe" />
     <Property Id="ARPHELPLINK" Value="https://github.com/slohmaier/UIAList" />
     <Property Id="ARPURLINFOABOUT" Value="https://github.com/slohmaier/UIAList" />
     <Property Id="ARPCONTACT" Value="stefan@slohmaier.de" />
     <Property Id="ARPCOMMENTS" Value="A utility for browsing and inspecting UI Automation controls" />
-    <Property Id="ARPNOREPAIR" Value="1" />
-    
-    <!-- winget package identifier -->
-    <Property Id="ARPNOREMOVE" Value="0" />
-    
-    <!-- Publisher information for winget -->
-    <Property Id="ARPREADME" Value="https://github.com/slohmaier/UIAList/blob/main/README.md" />
-    <Property Id="ARPURLUPDATEINFO" Value="https://github.com/slohmaier/UIAList/releases" />
 
-  </Product>
+    <!-- Features -->
+    <Feature Id="ProductFeature" Title="UIAList" Level="1">
+      <ComponentGroupRef Id="ProductFiles" />
+      <ComponentGroupRef Id="PlatformsPlugin" />
+      <ComponentRef Id="ApplicationShortcuts" />
+    </Feature>
+
+    <!-- Directory structure -->
+    <StandardDirectory Id="ProgramFiles6432Folder">
+      <Directory Id="INSTALLFOLDER" Name="UIAList">
+        <Directory Id="PlatformsFolder" Name="platforms" />
+      </Directory>
+    </StandardDirectory>
+    
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="UIAList" />
+    </StandardDirectory>
+    
+    <StandardDirectory Id="DesktopFolder" />
+
+    <!-- Files component group -->
+    <ComponentGroup Id="ProductFiles" Directory="INSTALLFOLDER">
+      <Component Id="UIAListExe">
+        <File Source="staging_$arch\UIAList.exe" KeyPath="yes" />
+      </Component>
+      <Component Id="Qt6Core">
+        <File Source="staging_$arch\Qt6Core.dll" />
+      </Component>
+      <Component Id="Qt6Gui">
+        <File Source="staging_$arch\Qt6Gui.dll" />
+      </Component>
+      <Component Id="Qt6Widgets">
+        <File Source="staging_$arch\Qt6Widgets.dll" />
+      </Component>
+      <Component Id="Qt6Network">
+        <File Source="staging_$arch\Qt6Network.dll" />
+      </Component>
+      <Component Id="Qt6Svg">
+        <File Source="staging_$arch\Qt6Svg.dll" />
+      </Component>
+      <Component Id="LICENSE">
+        <File Source="staging_$arch\LICENSE" />
+      </Component>
+      <Component Id="README">
+        <File Source="staging_$arch\README.md" />
+      </Component>
+      <Component Id="PrivacyPolicy">
+        <File Source="staging_$arch\PrivacyPolicy.html" />
+      </Component>
+    </ComponentGroup>
+    
+    <!-- Platforms plugin component -->
+    <ComponentGroup Id="PlatformsPlugin" Directory="PlatformsFolder">
+      <Component Id="QWindowsPlugin">
+        <File Source="staging_$arch\platforms\qwindows.dll" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <!-- Shortcuts -->
+    <Component Id="ApplicationShortcuts" Directory="ApplicationProgramsFolder">
+      <Shortcut Id="ApplicationStartMenuShortcut" 
+                Name="UIAList" 
+                Description="UI Automation Control Browser"
+                Target="[INSTALLFOLDER]UIAList.exe" 
+                WorkingDirectory="INSTALLFOLDER" />
+      <Shortcut Id="ApplicationDesktopShortcut"
+                Directory="DesktopFolder"
+                Name="UIAList"
+                Description="UI Automation Control Browser" 
+                Target="[INSTALLFOLDER]UIAList.exe"
+                WorkingDirectory="INSTALLFOLDER" />
+      <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall" />
+      <RegistryValue Root="HKCU" 
+                     Key="Software\Stefan Lohmaier\UIAList" 
+                     Name="Installed" 
+                     Type="integer" 
+                     Value="1" 
+                     KeyPath="yes" />
+    </Component>
+
+  </Package>
 </Wix>
 "@
 
         Set-Content -Path $wixFile -Value $wixContent -Encoding UTF8
         Write-Host "WiX source file created: $wixFile" -ForegroundColor $Cyan
 
-        # Compile WiX
+        # Build MSI with WiX
         try {
             Push-Location "$OutputDir\msi"
             
-            Write-Host "Generating file list with heat.exe for $arch..." -ForegroundColor $Cyan
-            & heat dir "staging_$arch" -cg StagingFiles -gg -scom -sreg -sfrag -srd -dr INSTALLFOLDER -var var.SourceDir -out "StagingFiles_$arch.wxs"
-            if ($LASTEXITCODE -ne 0) {
-                throw "Heat file generation failed for $arch"
+            if ($global:wixExe) {
+                # Use WiX v6.0+ CLI
+                Write-Host "Building MSI with WiX v6.0+ for $arch..." -ForegroundColor $Cyan
+                
+                # Create a simple WiX project file for v6.0
+                $projectFile = "UIAList_$arch.wixproj"
+                $projectContent = @"
+<Project Sdk="WiX.SDK">
+  <PropertyGroup>
+    <OutputName>UIAList_$arch</OutputName>
+    <OutputType>Package</OutputType>
+    <Platform>$arch</Platform>
+    <OutputPath>..\</OutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="UIAList_$arch.wxs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="staging_$arch\**" />
+  </ItemGroup>
+</Project>
+"@
+                Set-Content -Path $projectFile -Value $projectContent -Encoding UTF8
+                
+                # Build with wix build command
+                & "$($global:wixExe)" build "$projectFile" -arch "$arch" -out "UIAList-Installer-v0.1.0-$arch.msi"
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Host "WiX v6.0 build failed, trying fallback method..." -ForegroundColor $Yellow
+                    # Fallback: try direct build without project file
+                    & "$($global:wixExe)" build "UIAList_$arch.wxs" -arch "$arch" -bindpath "staging_$arch" -out "UIAList-Installer-v0.1.0-$arch.msi"
+                    if ($LASTEXITCODE -ne 0) {
+                        throw "WiX v6.0 build failed for $arch"
+                    }
+                }
+                
+                # Move MSI to main output directory if it's not already there
+                if (Test-Path "UIAList-Installer-v0.1.0-$arch.msi") {
+                    Move-Item "UIAList-Installer-v0.1.0-$arch.msi" "..\UIAList-Installer-v0.1.0-$arch.msi" -Force
+                }
+            } else {
+                # Fallback to WiX v3.x tools
+                Write-Host "Generating file list with heat.exe for $arch..." -ForegroundColor $Cyan
+                & heat dir "staging_$arch" -cg StagingFiles -gg -scom -sreg -sfrag -srd -dr INSTALLFOLDER -var var.SourceDir -out "StagingFiles_$arch.wxs"
+                if ($LASTEXITCODE -ne 0) {
+                    throw "Heat file generation failed for $arch"
+                }
+                
+                Write-Host "Compiling WiX source for $arch..." -ForegroundColor $Cyan
+                & candle "UIAList_$arch.wxs" "StagingFiles_$arch.wxs" -dSourceDir="staging_$arch"
+                if ($LASTEXITCODE -ne 0) {
+                    throw "WiX compilation failed for $arch"
+                }
+                
+                Write-Host "Linking MSI package for $arch..." -ForegroundColor $Cyan
+                & light "UIAList_$arch.wixobj" "StagingFiles_$arch.wixobj" -out "UIAList_$arch.msi" -ext WixUIExtension
+                if ($LASTEXITCODE -ne 0) {
+                    throw "WiX linking failed for $arch"
+                }
+                
+                # Move MSI to main output directory
+                $finalMSI = "..\UIAList-Installer-v0.1.0-$arch.msi"
+                Move-Item "UIAList_$arch.msi" $finalMSI -Force
             }
-            
-            Write-Host "Compiling WiX source for $arch..." -ForegroundColor $Cyan
-            & candle "UIAList_$arch.wxs" "StagingFiles_$arch.wxs" -dSourceDir="staging_$arch"
-            if ($LASTEXITCODE -ne 0) {
-                throw "WiX compilation failed for $arch"
-            }
-            
-            Write-Host "Linking MSI package for $arch..." -ForegroundColor $Cyan
-            & light "UIAList_$arch.wixobj" "StagingFiles_$arch.wixobj" -out "UIAList_$arch.msi" -ext WixUIExtension
-            if ($LASTEXITCODE -ne 0) {
-                throw "WiX linking failed for $arch"
-            }
-            
-            # Move MSI to main output directory
-            $finalMSI = "..\UIAList-Installer-v0.1.0-$arch.msi"
-            Move-Item "UIAList_$arch.msi" $finalMSI -Force
             
             Pop-Location
             
@@ -632,6 +699,119 @@ if ($buildMSI) {
         } catch {
             Write-Host "Failed to create MSI for ${arch}: $_" -ForegroundColor $Red
             Pop-Location
+        }
+    }
+}
+
+# Create MSIX packages for Microsoft Store
+if ($buildMSIX) {
+    Write-Host ""
+    Write-Host "Creating MSIX packages..." -ForegroundColor $Blue
+    
+    # Create MSIX output directory
+    New-Item -ItemType Directory -Path "$OutputDir\msix" -Force | Out-Null
+    
+    $msixPackages = @()
+    
+    foreach ($arch in $Architectures) {
+        Write-Host ""
+        Write-Host "Creating MSIX package for $arch..." -ForegroundColor $Blue
+        
+        # Create architecture-specific MSIX staging directory
+        $msixStagingDir = "$OutputDir\msix\staging_$arch"
+        Create-StagingArea -StagingPath $msixStagingDir -Architecture $arch
+        
+        # Copy MSIX manifest and assets
+        Copy-Item "Package.appxmanifest" "$msixStagingDir\AppxManifest.xml" -Force
+        Copy-Item "Assets" $msixStagingDir -Recurse -Force
+        
+        # Create architecture-specific manifest
+        $manifestPath = "$msixStagingDir\AppxManifest.xml"
+        $manifestContent = Get-Content $manifestPath -Raw
+        
+        # Update version and architecture-specific identity
+        $manifestContent = $manifestContent -replace 'Version="1\.0\.0\.0"', 'Version="0.1.0.0"'
+        $manifestContent = $manifestContent -replace 'Name="StefanLohmaier\.UIAList"', "Name=`"StefanLohmaier.UIAList.$arch`""
+        
+        Set-Content -Path $manifestPath -Value $manifestContent -Encoding UTF8
+        
+        # Create MSIX package
+        $msixFile = "$OutputDir\UIAList-Store-v0.1.0-$arch.msix"
+        
+        try {
+            Write-Host "Packaging MSIX for $arch..." -ForegroundColor $Cyan
+            & makeappx pack /d "$msixStagingDir" /p "$msixFile" /o
+            
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "MSIX package created: UIAList-Store-v0.1.0-$arch.msix" -ForegroundColor $Green
+                $msixSize = (Get-Item $msixFile).Length / 1MB
+                Write-Host "MSIX size: $([math]::Round($msixSize, 2)) MB" -ForegroundColor $Cyan
+                $msixPackages += $msixFile
+            } else {
+                throw "makeappx failed for $arch"
+            }
+        } catch {
+            Write-Host "Failed to create MSIX for ${arch}: $_" -ForegroundColor $Red
+        }
+    }
+    
+    # Create MSIX Bundle for Microsoft Store (contains both architectures)
+    if ($msixPackages.Count -gt 1) {
+        Write-Host ""
+        Write-Host "Creating MSIX Bundle for Microsoft Store..." -ForegroundColor $Blue
+        
+        # Create bundle manifest
+        $bundleManifest = "$OutputDir\msix\BundleManifest.xml"
+        $bundleManifestContent = '<?xml version="1.0" encoding="UTF-8"?>' + "`n"
+        $bundleManifestContent += '<Bundle xmlns="http://schemas.microsoft.com/appx/2013/bundle"' + "`n"
+        $bundleManifestContent += '        xmlns:b4="http://schemas.microsoft.com/appx/2018/bundle">' + "`n"
+        $bundleManifestContent += '  <Identity Name="StefanLohmaier.UIAList"' + "`n"
+        $bundleManifestContent += '            Publisher="CN=Stefan Lohmaier"' + "`n"
+        $bundleManifestContent += '            Version="0.1.0.0" />' + "`n"
+        $bundleManifestContent += '  <Packages>' + "`n"
+        
+        foreach ($arch in $Architectures) {
+            if (Test-Path "$OutputDir\UIAList-Store-v0.1.0-$arch.msix") {
+                $msixFileName = "UIAList-Store-v0.1.0-$arch.msix"
+                $bundleManifestContent += "    <Package Type=`"application`"" + "`n"
+                $bundleManifestContent += "             Version=`"0.1.0.0`"" + "`n"
+                $bundleManifestContent += "             Architecture=`"$arch`"" + "`n"
+                $bundleManifestContent += "             FileName=`"$msixFileName`" />" + "`n"
+            }
+        }
+        
+        $bundleManifestContent += '  </Packages>' + "`n"
+        $bundleManifestContent += '</Bundle>' + "`n"
+        
+        Set-Content -Path $bundleManifest -Value $bundleManifestContent -Encoding UTF8
+        
+        # Create bundle
+        $bundleFile = "$OutputDir\UIAList-Store-Bundle-v0.1.0.msixbundle"
+        
+        try {
+            # Copy MSIX files to bundle staging area
+            $bundleStagingDir = "$OutputDir\msix\bundle_staging"
+            New-Item -ItemType Directory -Path $bundleStagingDir -Force | Out-Null
+            
+            foreach ($msixFile in $msixPackages) {
+                $fileName = Split-Path $msixFile -Leaf
+                Copy-Item $msixFile "$bundleStagingDir\$fileName" -Force
+            }
+            
+            Copy-Item $bundleManifest "$bundleStagingDir\AppxBundleManifest.xml" -Force
+            
+            Write-Host "Creating MSIX Bundle..." -ForegroundColor $Cyan
+            & makeappx bundle /d "$bundleStagingDir" /p "$bundleFile" /o
+            
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "MSIX Bundle created: UIAList-Store-Bundle-v0.1.0.msixbundle" -ForegroundColor $Green
+                $bundleSize = (Get-Item $bundleFile).Length / 1MB
+                Write-Host "Bundle size: $([math]::Round($bundleSize, 2)) MB" -ForegroundColor $Cyan
+            } else {
+                throw "Bundle creation failed"
+            }
+        } catch {
+            Write-Host "Failed to create MSIX Bundle: $_" -ForegroundColor $Red
         }
     }
 }
@@ -655,6 +835,14 @@ foreach ($arch in $Architectures) {
     if ($buildMSI -and (Test-Path "$OutputDir\UIAList-Installer-v0.1.0-$arch.msi")) {
         Write-Host "✓ MSI Installer ($arch): UIAList-Installer-v0.1.0-$arch.msi" -ForegroundColor $Green
     }
+    
+    if ($buildMSIX -and (Test-Path "$OutputDir\UIAList-Store-v0.1.0-$arch.msix")) {
+        Write-Host "✓ MSIX Package ($arch): UIAList-Store-v0.1.0-$arch.msix" -ForegroundColor $Green
+    }
+}
+
+if ($buildMSIX -and (Test-Path "$OutputDir\UIAList-Store-Bundle-v0.1.0.msixbundle")) {
+    Write-Host "✓ MSIX Bundle (x64+ARM64): UIAList-Store-Bundle-v0.1.0.msixbundle" -ForegroundColor $Green
 }
 
 Write-Host ""
