@@ -25,8 +25,12 @@ This guide provides step-by-step instructions for creating an MSIX package and s
 
 ### 2. Build and Package
 ```powershell
-# Build and create MSIX package
-.\build_msix.ps1 -Configuration Release
+# Build all package types (ZIP, MSI, MSIX) for both architectures
+cd deployment
+.\deploy.ps1
+
+# Build only MSIX packages for Store submission
+.\deploy.ps1 -MSIXOnly
 ```
 
 ### 3. Test Package
@@ -64,7 +68,7 @@ Add-AppxPackage .\package_output\UIAList.msix
 
 2. **Generate Icons**
    ```powershell
-   .\generate_store_assets.ps1
+   .\scripts\generate_store_assets.ps1
    ```
    
    **Required Sizes:**
@@ -79,8 +83,14 @@ Add-AppxPackage .\package_output\UIAList.msix
 
 #### Option A: Automated Build
 ```powershell
-# Full build and package
-.\build_msix.ps1 -Configuration Release
+# Full build and package - all types for both architectures
+cd deployment
+.\deploy.ps1
+
+# Or build specific types only
+.\deploy.ps1 -MSIXOnly    # For Store submission
+.\deploy.ps1 -ZipOnly     # For portable distribution
+.\deploy.ps1 -MSIOnly     # For traditional installers
 ```
 
 #### Option B: Manual Build

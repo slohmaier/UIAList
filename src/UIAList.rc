@@ -31,4 +31,4 @@ BEGIN
 END
 
 // Application icon
-IDI_APPLICATION ICON "uialist_icon.ico"
+IDI_APPLICATION ICON "../resources/icons/uialist_icon.ico"

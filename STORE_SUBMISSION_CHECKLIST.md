@@ -25,7 +25,7 @@
 ### 1. Generate Store Assets
 ```powershell
 # Run from project root
-.\generate_store_assets.ps1
+.\scripts\generate_store_assets.ps1
 ```
 
 **Required Icons:**
@@ -44,11 +44,12 @@
 
 ### 3. Build and Test
 ```powershell
-# Build MSIX package
-.\build_msix.ps1 -Configuration Release
+# Build MSIX packages for Store submission
+cd deployment
+.\deploy.ps1 -MSIXOnly
 
 # Test installation
-Add-AppxPackage .\package_output\UIAList.msix
+Add-AppxPackage .\UIAList-Store-v0.1.0-x64.msix
 ```
 
 ### 4. Create Screenshots
@@ -75,7 +76,7 @@ Take screenshots showing:
 
 ### Package Upload
 1. **Upload MSIX**
-   - Upload `package_output/UIAList.msix`
+   - Upload `deployment/UIAList-Store-v0.1.0-x64.msix`
    - Wait for automatic validation
    - Address any validation errors
 

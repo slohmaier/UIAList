@@ -1,6 +1,6 @@
 # UIAList - Accessibility Tool for Screen Reader Users
 
-![UIAList Icon](uialist_icon.svg)
+![UIAList Icon](resources/icons/uialist_icon.svg)
 
 **UIAList** is an accessibility tool designed for blind and visually impaired users who rely on screen readers like JAWS, NVDA, or Windows Narrator. This application lists all controls by name and type for the current application with search functionality to quickly find and interact with controls. It saves significant time by eliminating the need for traditional tabbing navigation that is typical with screen readers.
 
@@ -118,6 +118,60 @@ struct ControlInfo {
 - **Dialog Interaction**: Efficient button and control location in modal dialogs
 - **Application Exploration**: Discovery of available controls in unfamiliar applications
 - **Accessibility Testing**: Control enumeration for accessibility validation
+
+## Building UIAList
+
+### Prerequisites
+
+- **Visual Studio 2022** with C++ development tools
+- **Qt 6.9.2** with MSVC2022 compilers (both x64 and ARM64)
+- **Windows 10/11 SDK** (latest version)
+- **CMake 3.16+**
+- **WiX Toolset v6.0** (for MSI installers)
+- **Windows App SDK** (for MSIX packages)
+
+### Quick Build
+
+Use the unified deployment script from the `deployment/` directory:
+
+```powershell
+# Build all package types for both architectures
+cd deployment
+./deploy.ps1
+
+# Build only ZIP packages
+./deploy.ps1 -ZipOnly
+
+# Build only for x64 architecture  
+./deploy.ps1 -Architectures @('x64')
+
+# Skip build, only package existing builds
+./deploy.ps1 -SkipBuild
+```
+
+### Package Types Created
+
+- **Portable ZIP**: `UIAList-Portable-v0.1.0-{arch}.zip`
+- **MSI Installer**: `UIAList-Installer-v0.1.0-{arch}.msi` 
+- **MSIX Package**: `UIAList-Store-v0.1.0-{arch}.msix`
+
+All packages are created in the `deployment/` directory.
+
+### Manual Build
+
+If you prefer manual building:
+
+```cmd
+# Configure for x64
+cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_PREFIX_PATH="C:\Qt\6.9.2\msvc2022_64"
+
+# Build
+cmake --build . --config Release
+
+# Configure for ARM64
+cmake .. -G "Visual Studio 17 2022" -A ARM64 -DCMAKE_PREFIX_PATH="C:\Qt\6.9.2\msvc2022_arm64"
+cmake --build . --config Release
+```
 
 ## Development
 
