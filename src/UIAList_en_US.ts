@@ -195,6 +195,201 @@ The welcome screen will now appear to help you get started.</source>
         <source>UIAList - Screen Reader Control Navigator</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="uialist.cpp" line="252"/>
+        <source>Button</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="253"/>
+        <source>CheckBox</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="254"/>
+        <source>ComboBox</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="255"/>
+        <source>Edit</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="256"/>
+        <source>Hyperlink</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="257"/>
+        <source>Image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="258"/>
+        <source>ListItem</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="259"/>
+        <source>List</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="260"/>
+        <source>Menu</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="261"/>
+        <source>MenuBar</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="262"/>
+        <source>MenuItem</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="263"/>
+        <source>ProgressBar</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="264"/>
+        <source>RadioButton</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="265"/>
+        <source>ScrollBar</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="266"/>
+        <source>Slider</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="267"/>
+        <source>Spinner</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="268"/>
+        <source>StatusBar</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="269"/>
+        <source>Tab</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="270"/>
+        <source>TabItem</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="271"/>
+        <source>Text</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="272"/>
+        <source>ToolBar</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="273"/>
+        <source>ToolTip</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="274"/>
+        <source>Tree</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="275"/>
+        <source>TreeItem</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="276"/>
+        <source>Custom</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="277"/>
+        <source>Group</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="278"/>
+        <source>Thumb</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="279"/>
+        <source>DataGrid</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="280"/>
+        <source>DataItem</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="281"/>
+        <source>Document</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="282"/>
+        <source>SplitButton</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="283"/>
+        <source>Window</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="284"/>
+        <source>Pane</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="285"/>
+        <source>Header</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="286"/>
+        <source>HeaderItem</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="287"/>
+        <source>Table</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="288"/>
+        <source>TitleBar</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="289"/>
+        <source>Separator</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="290"/>
+        <source>Unknown(%1)</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>UIAListIcon</name>

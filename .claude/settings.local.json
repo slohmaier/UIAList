@@ -28,7 +28,10 @@
       "Bash(git add:*)",
       "Bash(rm:*)",
       "Bash(git commit:*)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(findstr:*)",
+      "Bash(\"C:\\Qt\\6.9.1\\msvc2022_64\\bin\\lupdate.exe\" src/ -ts src/UIAList_de_DE.ts src/UIAList_en_US.ts)",
+      "Bash(\"C:\\Qt\\6.9.1\\msvc2022_64\\bin\\lrelease.exe\" src/UIAList_de_DE.ts src/UIAList_en_US.ts)"
     ],
     "deny": []
   }

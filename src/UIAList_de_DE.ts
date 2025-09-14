@@ -205,6 +205,201 @@ Der Willkommensbildschirm wird nun angezeigt, um Ihnen den Einstieg zu erleichte
         <source>UIAList - Screen Reader Control Navigator</source>
         <translation>UIAList - Bildschirmleser-Steuerelement-Navigator</translation>
     </message>
+    <message>
+        <location filename="uialist.cpp" line="252"/>
+        <source>Button</source>
+        <translation>Schaltfläche</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="253"/>
+        <source>CheckBox</source>
+        <translation>Kontrollkästchen</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="254"/>
+        <source>ComboBox</source>
+        <translation>Kombinationsfeld</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="255"/>
+        <source>Edit</source>
+        <translation>Eingabefeld</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="256"/>
+        <source>Hyperlink</source>
+        <translation>Link</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="257"/>
+        <source>Image</source>
+        <translation>Bild</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="258"/>
+        <source>ListItem</source>
+        <translation>Listenelement</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="259"/>
+        <source>List</source>
+        <translation>Liste</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="260"/>
+        <source>Menu</source>
+        <translation>Menü</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="261"/>
+        <source>MenuBar</source>
+        <translation>Menüleiste</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="262"/>
+        <source>MenuItem</source>
+        <translation>Menüeintrag</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="263"/>
+        <source>ProgressBar</source>
+        <translation>Fortschrittsbalken</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="264"/>
+        <source>RadioButton</source>
+        <translation>Optionsfeld</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="265"/>
+        <source>ScrollBar</source>
+        <translation>Bildlaufleiste</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="266"/>
+        <source>Slider</source>
+        <translation>Schieberegler</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="267"/>
+        <source>Spinner</source>
+        <translation>Drehfeld</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="268"/>
+        <source>StatusBar</source>
+        <translation>Statusleiste</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="269"/>
+        <source>Tab</source>
+        <translation>Registerkarte</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="270"/>
+        <source>TabItem</source>
+        <translation>Registerelement</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="271"/>
+        <source>Text</source>
+        <translation>Text</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="272"/>
+        <source>ToolBar</source>
+        <translation>Symbolleiste</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="273"/>
+        <source>ToolTip</source>
+        <translation>QuickInfo</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="274"/>
+        <source>Tree</source>
+        <translation>Baum</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="275"/>
+        <source>TreeItem</source>
+        <translation>Baumelement</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="276"/>
+        <source>Custom</source>
+        <translation>Benutzerdefiniert</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="277"/>
+        <source>Group</source>
+        <translation>Gruppe</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="278"/>
+        <source>Thumb</source>
+        <translation>Ziehpunkt</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="279"/>
+        <source>DataGrid</source>
+        <translation>Datengitter</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="280"/>
+        <source>DataItem</source>
+        <translation>Datenelement</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="281"/>
+        <source>Document</source>
+        <translation>Dokument</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="282"/>
+        <source>SplitButton</source>
+        <translation>Geteilte Schaltfläche</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="283"/>
+        <source>Window</source>
+        <translation>Fenster</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="284"/>
+        <source>Pane</source>
+        <translation>Bereich</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="285"/>
+        <source>Header</source>
+        <translation>Kopfzeile</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="286"/>
+        <source>HeaderItem</source>
+        <translation>Kopfzeilenelement</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="287"/>
+        <source>Table</source>
+        <translation>Tabelle</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="288"/>
+        <source>TitleBar</source>
+        <translation>Titelleiste</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="289"/>
+        <source>Separator</source>
+        <translation>Trennlinie</translation>
+    </message>
+    <message>
+        <location filename="uialist.cpp" line="290"/>
+        <source>Unknown(%1)</source>
+        <translation>Unbekannt(%1)</translation>
+    </message>
 </context>
 <context>
     <name>UIAListIcon</name>
