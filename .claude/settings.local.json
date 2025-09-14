@@ -16,7 +16,16 @@
       "Bash(lupdate:*)",
       "Bash(lrelease:*)",
       "Bash(\"C:\\Qt\\Tools\\CMake_64\\bin\\cmake.exe\" --build build_msix --config Release --clean-first)",
-      "Bash(\"C:\\Qt\\Tools\\CMake_64\\bin\\cmake.exe\" .. -G \"Visual Studio 17 2022\" -A x64)"
+      "Bash(\"C:\\Qt\\Tools\\CMake_64\\bin\\cmake.exe\" .. -G \"Visual Studio 17 2022\" -A x64)",
+      "Bash(where:*)",
+      "Bash(winget install:*)",
+      "Bash(winget search:*)",
+      "Read(C:\\Program Files (x86)/**)",
+      "Read(C:\\Program Files (x86)\\WiX Toolset v3.14/**)",
+      "Read(C:\\Program Files (x86)\\WiX Toolset v3.14\\bin/**)",
+      "Bash(\"C:\\Program Files (x86)\\WiX Toolset v3.14\\bin\\candle.exe\" -help)",
+      "Bash(python run_tests.py:*)",
+      "Bash(git add:*)"
     ],
     "deny": []
   }
