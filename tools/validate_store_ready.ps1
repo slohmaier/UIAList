@@ -100,8 +100,8 @@ Write-Host ""
 Write-Host "Checking documentation..." -ForegroundColor Yellow
 Test-Requirement "README.md exists" (Test-Path "README.md") "README.md file is missing"
 Test-Requirement "LICENSE exists" (Test-Path "LICENSE") "LICENSE file is missing"
-Test-Requirement "STORE_LISTING.md exists" (Test-Path "STORE_LISTING.md") "STORE_LISTING.md file is missing"
-Test-Requirement "PACKAGING_GUIDE.md exists" (Test-Path "PACKAGING_GUIDE.md") "PACKAGING_GUIDE.md file is missing"
+Test-Requirement "STORE_LISTING.md exists" (Test-Path "docs\STORE_LISTING.md") "STORE_LISTING.md file is missing"
+Test-Requirement "PACKAGING_GUIDE.md exists" (Test-Path "docs\PACKAGING_GUIDE.md") "PACKAGING_GUIDE.md file is missing"
 
 # Check LICENSE content
 if (Test-Path "LICENSE") {

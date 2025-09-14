@@ -91,7 +91,8 @@ uialist_icon.png
 /dist/
 /build_packages*/
 /build_msix/
-package_output/
+/package_output/
+/deployment/
 
 # Deployment output packages - ignore the generated files but keep the script
 deployment/*.zip
@@ -101,6 +102,11 @@ deployment/*.msixbundle
 deployment/portable/
 deployment/msi/
 deployment/msix/
+
+# Temporary files
+nul
+*.tmp
+*.bak
 
 # Generated resource files and icons
 resources/icons/*.ico

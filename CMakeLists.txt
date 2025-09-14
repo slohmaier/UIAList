@@ -12,7 +12,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools)
 
-set(TS_FILES src/UIAList_en_US.ts src/UIAList_de_DE.ts)
+set(TS_FILES translations/UIAList_en_US.ts translations/UIAList_de_DE.ts)
 
 # Convert SVG icon to PNG and ICO
 find_program(INKSCAPE_EXECUTABLE inkscape)
@@ -202,8 +202,8 @@ if(WIN32)
     )
     
     # Copy privacy policy
-    install(FILES 
-        ${CMAKE_SOURCE_DIR}/PrivacyPolicy.html
+    install(FILES
+        ${CMAKE_SOURCE_DIR}/docs/PrivacyPolicy.html
         DESTINATION .
     )
     

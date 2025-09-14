@@ -1,6 +1,6 @@
 <RCC>
     <qresource prefix="/i18n">
-        <file>UIAList_en_US.qm</file>
-        <file>UIAList_de_DE.qm</file>
+        <file>../translations/UIAList_en_US.qm</file>
+        <file>../translations/UIAList_de_DE.qm</file>
     </qresource>
 </RCC>

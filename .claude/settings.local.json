@@ -35,7 +35,8 @@
       "Read(//c/Users/slohm/git/**)",
       "Bash(\"C:\\Qt\\Tools\\CMake_64\\bin\\cmake.exe\" -DCMAKE_PREFIX_PATH=\"C:\\Qt\\6.9.1\\msvc2022_64\" ..)",
       "Bash(./UIAList.exe)",
-      "Bash(notepad.exe)"
+      "Bash(notepad.exe)",
+      "Bash(New-Item -ItemType Directory -Path \"translations\" -Force)"
     ],
     "deny": []
   }
