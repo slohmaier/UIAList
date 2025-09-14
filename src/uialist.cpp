@@ -31,14 +31,18 @@
 #include <atlbase.h>
 
 UIAList::UIAList(QWidget *parent)
-    : QMainWindow(parent), m_trayIcon(nullptr), m_centralWidget(nullptr), 
-      m_layout(nullptr), m_buttonLayout(nullptr), m_windowTitleLabel(nullptr), m_filterEdit(nullptr), m_listWidget(nullptr),
-      m_hideEmptyTitlesCheckBox(nullptr), m_hideMenusCheckBox(nullptr), m_clickButton(nullptr), m_focusButton(nullptr), 
-      m_doubleClickButton(nullptr), m_uiAutomation(nullptr), m_controlViewWalker(nullptr), m_settings(nullptr)
+    : QMainWindow(parent), m_trayIcon(nullptr), m_centralWidget(nullptr), m_stackedWidget(nullptr),
+      m_mainWidget(nullptr), m_loadingWidget(nullptr), m_layout(nullptr), m_buttonLayout(nullptr),
+      m_windowTitleLabel(nullptr), m_filterEdit(nullptr), m_listWidget(nullptr),
+      m_hideEmptyTitlesCheckBox(nullptr), m_hideMenusCheckBox(nullptr), m_clickButton(nullptr), m_focusButton(nullptr),
+      m_doubleClickButton(nullptr), m_loadingLayout(nullptr), m_loadingLabel(nullptr), m_progressBar(nullptr),
+      m_cancelButton(nullptr), m_uiAutomation(nullptr), m_controlViewWalker(nullptr), m_workerThread(nullptr),
+      m_worker(nullptr), m_settings(nullptr)
 {
     m_settings = new QSettings("UIAList", "Settings", this);
     
     setupUI();
+    setupLoadingOverlay();
     initializeUIAutomation();
     
     m_trayIcon = new UIAListIcon(this);
@@ -52,8 +56,20 @@ UIAList::UIAList(QWidget *parent)
     checkAndShowWelcome();
 }
 
-UIAList::~UIAList() 
+UIAList::~UIAList()
 {
+    // Clean up worker thread
+    if (m_workerThread && m_workerThread->isRunning()) {
+        if (m_worker) {
+            m_worker->cancelEnumeration();
+        }
+        m_workerThread->quit();
+        m_workerThread->wait(3000); // Wait up to 3 seconds
+        if (m_workerThread->isRunning()) {
+            m_workerThread->terminate();
+        }
+    }
+
     cleanupUIAutomation();
 }
 
@@ -61,8 +77,13 @@ void UIAList::setupUI()
 {
     m_centralWidget = new QWidget(this);
     setCentralWidget(m_centralWidget);
-    
-    m_layout = new QVBoxLayout(m_centralWidget);
+
+    // Create stacked widget for switching between main UI and loading overlay
+    m_stackedWidget = new QStackedWidget(m_centralWidget);
+
+    // Main widget with the existing UI
+    m_mainWidget = new QWidget();
+    m_layout = new QVBoxLayout(m_mainWidget);
     
     // Window title label
     m_windowTitleLabel = new QLabel(this);
@@ -112,10 +133,56 @@ void UIAList::setupUI()
     m_layout->addWidget(m_hideEmptyTitlesCheckBox);
     m_layout->addWidget(m_hideMenusCheckBox);
     m_layout->addLayout(m_buttonLayout);
-    
+
+    // Add main widget to stacked widget
+    m_stackedWidget->addWidget(m_mainWidget);
+
+    // Set up the main layout for the central widget
+    QVBoxLayout *centralLayout = new QVBoxLayout(m_centralWidget);
+    centralLayout->setContentsMargins(0, 0, 0, 0);
+    centralLayout->addWidget(m_stackedWidget);
+
     setWindowTitle(tr("UIAList - Screen Reader Control Navigator"));
     setWindowIcon(QIcon(":/icons/uialist_icon.png"));
     resize(600, 400);
+}
+
+void UIAList::setupLoadingOverlay()
+{
+    // Create loading widget
+    m_loadingWidget = new QWidget();
+    m_loadingLayout = new QVBoxLayout(m_loadingWidget);
+    m_loadingLayout->setAlignment(Qt::AlignCenter);
+
+    // Loading label
+    m_loadingLabel = new QLabel(tr("Listing controls..."));
+    m_loadingLabel->setAlignment(Qt::AlignCenter);
+    QFont font = m_loadingLabel->font();
+    font.setPointSize(14);
+    font.setBold(true);
+    m_loadingLabel->setFont(font);
+
+    // Progress bar (indeterminate style)
+    m_progressBar = new QProgressBar();
+    m_progressBar->setRange(0, 0); // Indeterminate progress
+    m_progressBar->setTextVisible(false);
+
+    // Cancel button
+    m_cancelButton = new QPushButton(tr("Cancel"));
+    m_cancelButton->setMaximumWidth(100);
+    connect(m_cancelButton, &QPushButton::clicked, this, &UIAList::onCancelButtonClicked);
+
+    // Layout the loading overlay
+    m_loadingLayout->addStretch();
+    m_loadingLayout->addWidget(m_loadingLabel);
+    m_loadingLayout->addSpacing(20);
+    m_loadingLayout->addWidget(m_progressBar);
+    m_loadingLayout->addSpacing(20);
+    m_loadingLayout->addWidget(m_cancelButton, 0, Qt::AlignCenter);
+    m_loadingLayout->addStretch();
+
+    // Add loading widget to stacked widget
+    m_stackedWidget->addWidget(m_loadingWidget);
 }
 
 void UIAList::initializeUIAutomation()
@@ -142,70 +209,123 @@ void UIAList::initializeUIAutomation()
     qDebug() << "UI Automation initialized successfully";
 }
 
+void UIAList::showLoadingOverlay()
+{
+    if (!m_stackedWidget || !m_loadingWidget) {
+        return;
+    }
+
+    m_stackedWidget->setCurrentWidget(m_loadingWidget);
+    if (m_cancelButton) {
+        m_cancelButton->setFocus();
+    }
+}
+
+void UIAList::hideLoadingOverlay()
+{
+    m_stackedWidget->setCurrentWidget(m_mainWidget);
+    m_filterEdit->setFocus();
+}
+
 void UIAList::showWindow(void* foregroundWindow)
 {
     show();
     raise();
     activateWindow();
-    
-    // Clear filter and set focus to filter edit box
-    m_filterEdit->clear();
-    m_filterEdit->setFocus();
-    
-    // Enumerate controls of the passed foreground window
-    enumerateControls(foregroundWindow);
-    
-    // Announce to screen reader
-    if (!m_targetWindowTitle.isEmpty()) {
-        announceText(QString("Showing controls for %1").arg(m_targetWindowTitle));
-    }
-}
 
-void UIAList::enumerateControls(void* windowHandle)
-{
-    if (!m_uiAutomation || !m_controlViewWalker) {
-        qDebug() << "UI Automation not initialized";
-        return;
-    }
-    
-    HWND targetWindow = (HWND)windowHandle;
-    if (!targetWindow) {
-        qDebug() << "No target window provided";
-        return;
-    }
-    
     // Clear previous data
     m_allControls.clear();
     m_controlMap.clear();
     m_listWidget->clear();
-    
-    // Get window title for debugging and display
-    wchar_t windowTitle[256];
-    GetWindowTextW(targetWindow, windowTitle, 256);
-    m_targetWindowTitle = QString::fromWCharArray(windowTitle);
-    if (m_targetWindowTitle.isEmpty()) {
-        m_targetWindowTitle = "Untitled Window";
+
+    // Show loading overlay
+    showLoadingOverlay();
+
+    // Start background enumeration
+    startEnumeration(foregroundWindow);
+}
+
+void UIAList::startEnumeration(void* windowHandle)
+{
+    // Clean up previous worker if any
+    if (m_workerThread && m_workerThread->isRunning()) {
+        if (m_worker) {
+            m_worker->cancelEnumeration();
+        }
+        m_workerThread->quit();
+        m_workerThread->wait(1000);
     }
-    qDebug() << "Enumerating controls for window:" << m_targetWindowTitle << "HWND:" << targetWindow;
-    
-    // Update the window title label
-    m_windowTitleLabel->setText(QString("Controls for: %1").arg(m_targetWindowTitle));
-    
-    // Get UI Automation element for the target window
-    IUIAutomationElement* rootElement = nullptr;
-    HRESULT hr = m_uiAutomation->ElementFromHandle(targetWindow, &rootElement);
-    if (FAILED(hr) || !rootElement) {
-        qDebug() << "Failed to get root element from target window";
+
+    // Validate UI Automation objects
+    if (!m_uiAutomation) {
+        qDebug() << "ERROR: m_uiAutomation is null!";
         return;
     }
-    
-    qDebug() << "Starting control enumeration...";
-    walkControls(rootElement, m_controlViewWalker);
-    
-    rootElement->Release();
-    
+    if (!m_controlViewWalker) {
+        qDebug() << "ERROR: m_controlViewWalker is null!";
+        return;
+    }
+
+    // Create new worker thread
+    m_workerThread = new QThread(this);
+    m_worker = new ControlEnumerationWorker(m_uiAutomation, m_controlViewWalker, windowHandle);
+    m_worker->moveToThread(m_workerThread);
+
+    // Connect signals
+    connect(m_workerThread, &QThread::started, m_worker, &ControlEnumerationWorker::enumerateControls);
+    connect(m_worker, &ControlEnumerationWorker::controlFound, this, &UIAList::onControlFound);
+    connect(m_worker, &ControlEnumerationWorker::enumerationFinished, this, &UIAList::onEnumerationFinished);
+    connect(m_worker, &ControlEnumerationWorker::enumerationCancelled, this, &UIAList::onEnumerationCancelled);
+    connect(m_workerThread, &QThread::finished, m_worker, &QObject::deleteLater);
+    connect(m_workerThread, &QThread::finished, m_workerThread, &QObject::deleteLater);
+
+    // Start the worker thread
+    m_workerThread->start();
+}
+
+void UIAList::onControlFound(const QString& displayText, const QString& originalName, void* element, int controlType)
+{
+    // Create ControlInfo and add to list
+    IUIAutomationElement* uiaElement = static_cast<IUIAutomationElement*>(element);
+    ControlInfo controlInfo(displayText, originalName, uiaElement, static_cast<CONTROLTYPEID>(controlType));
+    m_allControls.append(controlInfo);
+}
+
+void UIAList::onEnumerationFinished(const QString& windowTitle)
+{
+    m_targetWindowTitle = windowTitle;
+
+    // Update the window title label
+    m_windowTitleLabel->setText(QString("Controls for: %1").arg(m_targetWindowTitle));
+
+    // Populate the list widget
     populateListWidget();
-    qDebug() << "Enumeration complete. Found" << m_allControls.size() << "controls";
+
+    // Hide loading overlay and show main UI
+    hideLoadingOverlay();
+
+    // Clear filter and set focus to filter edit box
+    m_filterEdit->clear();
+    m_filterEdit->setFocus();
+
+    // Announce to screen reader
+    announceText(QString("Showing controls for %1").arg(m_targetWindowTitle));
+}
+
+void UIAList::onEnumerationCancelled()
+{
+    // Hide loading overlay
+    hideLoadingOverlay();
+
+    // Close the window
+    hide();
+}
+
+void UIAList::onCancelButtonClicked()
+{
+    if (m_worker) {
+        m_worker->cancelEnumeration();
+    }
 }
 
 void UIAList::walkControls(IUIAutomationElement* element, IUIAutomationTreeWalker* walker)
@@ -938,3 +1058,169 @@ void UIAList::showWelcomeScreen()
     WelcomeDialog welcome(this);
     welcome.exec();
 }
+
+// ControlEnumerationWorker implementation
+ControlEnumerationWorker::ControlEnumerationWorker(IUIAutomation* uiAutomation, IUIAutomationTreeWalker* walker, void* windowHandle)
+    : m_uiAutomation(uiAutomation), m_walker(walker), m_windowHandle(windowHandle), m_cancelled(false)
+{
+}
+
+void ControlEnumerationWorker::enumerateControls()
+{
+    // Initialize COM for this thread
+    HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+    if (FAILED(hr)) {
+        emit enumerationCancelled();
+        return;
+    }
+
+    HWND targetWindow = (HWND)m_windowHandle;
+    if (!targetWindow) {
+        emit enumerationCancelled();
+        CoUninitialize();
+        return;
+    }
+
+    // Get window title
+    wchar_t windowTitle[256];
+    GetWindowTextW(targetWindow, windowTitle, 256);
+    QString windowTitleStr = QString::fromWCharArray(windowTitle);
+    if (windowTitleStr.isEmpty()) {
+        windowTitleStr = "Untitled Window";
+    }
+
+    // Validate UI Automation objects
+    if (!m_uiAutomation || !m_walker) {
+        emit enumerationCancelled();
+        CoUninitialize();
+        return;
+    }
+
+    // Get UI Automation element for the target window
+    IUIAutomationElement* rootElement = nullptr;
+    hr = m_uiAutomation->ElementFromHandle(targetWindow, &rootElement);
+    if (FAILED(hr) || !rootElement) {
+        emit enumerationCancelled();
+        CoUninitialize();
+        return;
+    }
+
+    // Walk through all controls
+    walkControls(rootElement, m_walker);
+
+    rootElement->Release();
+
+    // Check if cancelled before emitting finished
+    QMutexLocker locker(&m_cancelMutex);
+    if (!m_cancelled) {
+        emit enumerationFinished(windowTitleStr);
+    }
+
+    CoUninitialize();
+}
+
+void ControlEnumerationWorker::cancelEnumeration()
+{
+    QMutexLocker locker(&m_cancelMutex);
+    m_cancelled = true;
+}
+
+void ControlEnumerationWorker::walkControls(IUIAutomationElement* element, IUIAutomationTreeWalker* walker)
+{
+    if (!element || !walker) return;
+
+    // Check if cancelled
+    {
+        QMutexLocker locker(&m_cancelMutex);
+        if (m_cancelled) return;
+    }
+
+    // Get control type
+    CONTROLTYPEID controlType;
+    HRESULT hr = element->get_CurrentControlType(&controlType);
+    if (FAILED(hr)) return;
+
+    // Get control name
+    BSTR name = nullptr;
+    element->get_CurrentName(&name);
+    QString controlName = name ? QString::fromWCharArray(name) : QString("(no name)");
+    if (name) SysFreeString(name);
+
+    // Get control type string
+    QString controlTypeStr = getControlTypeString(controlType);
+
+    // Create display text
+    QString displayText = QString("%1: %2").arg(controlTypeStr, controlName);
+
+    // Emit the control found signal
+    emit controlFound(displayText, controlName, element, static_cast<int>(controlType));
+
+    // Walk child elements
+    IUIAutomationElement* child = nullptr;
+    hr = walker->GetFirstChildElement(element, &child);
+    while (SUCCEEDED(hr) && child) {
+        // Check if cancelled before processing child
+        {
+            QMutexLocker locker(&m_cancelMutex);
+            if (m_cancelled) {
+                child->Release();
+                return;
+            }
+        }
+
+        walkControls(child, walker);
+
+        IUIAutomationElement* nextChild = nullptr;
+        hr = walker->GetNextSiblingElement(child, &nextChild);
+        child->Release();
+        child = nextChild;
+    }
+}
+
+QString ControlEnumerationWorker::getControlTypeString(int controlType)
+{
+    CONTROLTYPEID ctrlType = static_cast<CONTROLTYPEID>(controlType);
+    switch (ctrlType) {
+        case UIA_ButtonControlTypeId: return "Button";
+        case UIA_CheckBoxControlTypeId: return "CheckBox";
+        case UIA_ComboBoxControlTypeId: return "ComboBox";
+        case UIA_EditControlTypeId: return "Edit";
+        case UIA_HyperlinkControlTypeId: return "Hyperlink";
+        case UIA_ImageControlTypeId: return "Image";
+        case UIA_ListItemControlTypeId: return "ListItem";
+        case UIA_ListControlTypeId: return "List";
+        case UIA_MenuControlTypeId: return "Menu";
+        case UIA_MenuBarControlTypeId: return "MenuBar";
+        case UIA_MenuItemControlTypeId: return "MenuItem";
+        case UIA_ProgressBarControlTypeId: return "ProgressBar";
+        case UIA_RadioButtonControlTypeId: return "RadioButton";
+        case UIA_ScrollBarControlTypeId: return "ScrollBar";
+        case UIA_SliderControlTypeId: return "Slider";
+        case UIA_SpinnerControlTypeId: return "Spinner";
+        case UIA_StatusBarControlTypeId: return "StatusBar";
+        case UIA_TabControlTypeId: return "Tab";
+        case UIA_TabItemControlTypeId: return "TabItem";
+        case UIA_TextControlTypeId: return "Text";
+        case UIA_ToolBarControlTypeId: return "ToolBar";
+        case UIA_ToolTipControlTypeId: return "ToolTip";
+        case UIA_TreeControlTypeId: return "Tree";
+        case UIA_TreeItemControlTypeId: return "TreeItem";
+        case UIA_CustomControlTypeId: return "Custom";
+        case UIA_GroupControlTypeId: return "Group";
+        case UIA_ThumbControlTypeId: return "Thumb";
+        case UIA_DataGridControlTypeId: return "DataGrid";
+        case UIA_DataItemControlTypeId: return "DataItem";
+        case UIA_DocumentControlTypeId: return "Document";
+        case UIA_SplitButtonControlTypeId: return "SplitButton";
+        case UIA_WindowControlTypeId: return "Window";
+        case UIA_PaneControlTypeId: return "Pane";
+        case UIA_HeaderControlTypeId: return "Header";
+        case UIA_HeaderItemControlTypeId: return "HeaderItem";
+        case UIA_TableControlTypeId: return "Table";
+        case UIA_TitleBarControlTypeId: return "TitleBar";
+        case UIA_SeparatorControlTypeId: return "Separator";
+        default: return QString("Unknown(%1)").arg(controlType);
+    }
+}
+
+#include "uialist.moc"

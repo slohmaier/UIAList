@@ -31,7 +31,11 @@
       "Bash(git pull:*)",
       "Bash(findstr:*)",
       "Bash(\"C:\\Qt\\6.9.1\\msvc2022_64\\bin\\lupdate.exe\" src/ -ts src/UIAList_de_DE.ts src/UIAList_en_US.ts)",
-      "Bash(\"C:\\Qt\\6.9.1\\msvc2022_64\\bin\\lrelease.exe\" src/UIAList_de_DE.ts src/UIAList_en_US.ts)"
+      "Bash(\"C:\\Qt\\6.9.1\\msvc2022_64\\bin\\lrelease.exe\" src/UIAList_de_DE.ts src/UIAList_en_US.ts)",
+      "Read(//c/Users/slohm/git/**)",
+      "Bash(\"C:\\Qt\\Tools\\CMake_64\\bin\\cmake.exe\" -DCMAKE_PREFIX_PATH=\"C:\\Qt\\6.9.1\\msvc2022_64\" ..)",
+      "Bash(./UIAList.exe)",
+      "Bash(notepad.exe)"
     ],
     "deny": []
   }

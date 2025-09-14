@@ -32,12 +32,46 @@
 #include <QKeyEvent>
 #include <QFocusEvent>
 #include <QSettings>
+#include <QThread>
+#include <QMutex>
+#include <QMovie>
+#include <QStackedWidget>
+#include <QProgressBar>
+#include <QTimer>
 
 #include <windows.h>
 #include <uiautomation.h>
 #include <comdef.h>
 
 class UIAListIcon;
+
+// Worker thread for enumerating controls
+class ControlEnumerationWorker : public QObject
+{
+    Q_OBJECT
+
+public:
+    ControlEnumerationWorker(IUIAutomation* uiAutomation, IUIAutomationTreeWalker* walker, void* windowHandle);
+
+public slots:
+    void enumerateControls();
+    void cancelEnumeration();
+
+signals:
+    void controlFound(const QString& displayText, const QString& originalName, void* element, int controlType);
+    void enumerationFinished(const QString& windowTitle);
+    void enumerationCancelled();
+
+private:
+    void walkControls(IUIAutomationElement* element, IUIAutomationTreeWalker* walker);
+    QString getControlTypeString(int controlType);
+
+    IUIAutomation* m_uiAutomation;
+    IUIAutomationTreeWalker* m_walker;
+    void* m_windowHandle;
+    bool m_cancelled;
+    QMutex m_cancelMutex;
+};
 
 struct ControlInfo {
     QString displayText;
@@ -92,6 +126,10 @@ private slots:
     void onClickButtonClicked();
     void onFocusButtonClicked();
     void onDoubleClickButtonClicked();
+    void onControlFound(const QString& displayText, const QString& originalName, void* element, int controlType);
+    void onEnumerationFinished(const QString& windowTitle);
+    void onEnumerationCancelled();
+    void onCancelButtonClicked();
 
 protected:
     bool eventFilter(QObject *obj, QEvent *event) override;
@@ -101,9 +139,12 @@ protected:
 
 private:
     void setupUI();
+    void setupLoadingOverlay();
     void initializeUIAutomation();
     void checkAndShowWelcome();
-    void enumerateControls(void* windowHandle);
+    void startEnumeration(void* windowHandle);
+    void showLoadingOverlay();
+    void hideLoadingOverlay();
     void walkControls(IUIAutomationElement* element, IUIAutomationTreeWalker* walker);
     QString getControlTypeString(CONTROLTYPEID controlType);
     void populateListWidget();
@@ -122,6 +163,9 @@ private:
     
     // UI Components
     QWidget *m_centralWidget;
+    QStackedWidget *m_stackedWidget;
+    QWidget *m_mainWidget;
+    QWidget *m_loadingWidget;
     QVBoxLayout *m_layout;
     QHBoxLayout *m_buttonLayout;
     QLabel *m_windowTitleLabel;
@@ -132,11 +176,21 @@ private:
     QPushButton *m_clickButton;
     QPushButton *m_focusButton;
     QPushButton *m_doubleClickButton;
+
+    // Loading overlay components
+    QVBoxLayout *m_loadingLayout;
+    QLabel *m_loadingLabel;
+    QProgressBar *m_progressBar;
+    QPushButton *m_cancelButton;
     
     // UI Automation
     IUIAutomation *m_uiAutomation;
     IUIAutomationTreeWalker *m_controlViewWalker;
     
+    // Threading components
+    QThread *m_workerThread;
+    ControlEnumerationWorker *m_worker;
+
     // Data storage
     QMap<QString, ControlInfo> m_controlMap;
     QList<ControlInfo> m_allControls;
