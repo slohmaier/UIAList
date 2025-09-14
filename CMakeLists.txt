@@ -12,7 +12,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools)
 
-set(TS_FILES UIAList_en_US.ts UIAList_de_DE.ts)
+set(TS_FILES src/UIAList_en_US.ts src/UIAList_de_DE.ts)
 
 # Convert SVG icon to PNG and ICO
 find_program(INKSCAPE_EXECUTABLE inkscape)
@@ -27,16 +27,16 @@ endif()
 if(NOT USE_PREGENERATED_ICON)
     add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png
-        COMMAND ${INKSCAPE_EXECUTABLE} --export-type=png --export-filename=${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png --export-width=32 --export-height=32 ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.svg
-        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.svg
+        COMMAND ${INKSCAPE_EXECUTABLE} --export-type=png --export-filename=${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png --export-width=32 --export-height=32 ${CMAKE_CURRENT_SOURCE_DIR}/resources/icons/uialist_icon.svg
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/resources/icons/uialist_icon.svg
         COMMENT "Converting SVG icon to PNG"
     )
 else()
     # Copy pre-generated PNG file
     add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png
-        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.png ${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png
-        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.png
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/resources/icons/uialist_icon.png ${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/resources/icons/uialist_icon.png
         COMMENT "Using pre-generated PNG icon"
     )
 endif()
@@ -47,52 +47,52 @@ if(WIN32)
     find_program(MAGICK_EXECUTABLE magick)
     if(MAGICK_EXECUTABLE)
         add_custom_command(
-            OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.ico
-            COMMAND ${MAGICK_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.ico
+            OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/resources/icons/uialist_icon.ico
+            COMMAND ${MAGICK_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png ${CMAKE_CURRENT_SOURCE_DIR}/resources/icons/uialist_icon.ico
             DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png
             COMMENT "Creating ICO from PNG using ImageMagick"
         )
     else()
         # Fallback: copy PNG to ICO (will cause resource compiler error)
         add_custom_command(
-            OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.ico
-            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.ico
+            OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/resources/icons/uialist_icon.ico
+            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png ${CMAKE_CURRENT_SOURCE_DIR}/resources/icons/uialist_icon.ico
             DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png
             COMMENT "Creating ICO from PNG (fallback method)"
         )
         message(WARNING "ImageMagick not found. ICO file may not be properly formatted for Windows resource compiler.")
     endif()
     
-    add_custom_target(convert_icon ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png ${CMAKE_CURRENT_SOURCE_DIR}/uialist_icon.ico)
+    add_custom_target(convert_icon ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png ${CMAKE_CURRENT_SOURCE_DIR}/resources/icons/uialist_icon.ico)
 else()
     add_custom_target(convert_icon ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png)
 endif()
 
 # Create Qt resource file
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc.in ${CMAKE_CURRENT_BINARY_DIR}/resources.qrc @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/resources.qrc.in ${CMAKE_CURRENT_BINARY_DIR}/resources.qrc @ONLY)
 
-set(RESOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/resources.qrc translations.qrc)
+set(RESOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/resources.qrc src/translations.qrc)
 set_source_files_properties(${RESOURCE_FILES} PROPERTIES OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/uialist_icon.png)
 
 set(PROJECT_SOURCES
-        main.cpp
-        uialist.cpp
-        uialist.h
-        uialisticon.cpp
-        uialisticon.h
-        aboutdialog.cpp
-        aboutdialog.h
-        settingsdialog.cpp
-        settingsdialog.h
-        welcomedialog.cpp
-        welcomedialog.h
+        src/main.cpp
+        src/uialist.cpp
+        src/uialist.h
+        src/uialisticon.cpp
+        src/uialisticon.h
+        src/aboutdialog.cpp
+        src/aboutdialog.h
+        src/settingsdialog.cpp
+        src/settingsdialog.h
+        src/welcomedialog.cpp
+        src/welcomedialog.h
         ${RESOURCE_FILES}
         ${TS_FILES}
 )
 
 # Add Windows resource file for executable icon
 if(WIN32)
-    list(APPEND PROJECT_SOURCES UIAList.rc)
+    list(APPEND PROJECT_SOURCES src/UIAList.rc)
 endif()
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -190,13 +190,13 @@ if(WIN32)
     
     # Copy Package.appxmanifest for MSIX packaging
     install(FILES 
-        ${CMAKE_SOURCE_DIR}/Package.appxmanifest
+        ${CMAKE_SOURCE_DIR}/resources/manifests/Package.appxmanifest
         DESTINATION .
     )
     
     # Copy Assets directory for MSIX packaging
     install(DIRECTORY 
-        ${CMAKE_SOURCE_DIR}/Assets/
+        ${CMAKE_SOURCE_DIR}/resources/assets/
         DESTINATION Assets
         PATTERN "*.md" EXCLUDE
     )

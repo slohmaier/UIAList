@@ -25,7 +25,10 @@
       "Read(C:\\Program Files (x86)\\WiX Toolset v3.14\\bin/**)",
       "Bash(\"C:\\Program Files (x86)\\WiX Toolset v3.14\\bin\\candle.exe\" -help)",
       "Bash(python run_tests.py:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(rm:*)",
+      "Bash(git commit:*)",
+      "Bash(git pull:*)"
     ],
     "deny": []
   }

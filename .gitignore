@@ -89,22 +89,28 @@ uialist_icon.png
 # Build and packaging directories
 /build*/
 /dist/
-/build_packages/
+/build_packages*/
 /build_msix/
 package_output/
 
-# Temporary files and downloads
-wix-toolset.zip
-*.zip
-*.msi
+# Deployment output packages - ignore the generated files but keep the script
+deployment/*.zip
+deployment/*.msi
+deployment/*.msix
+deployment/*.msixbundle
+deployment/portable/
+deployment/msi/
+deployment/msix/
+
+# Generated resource files and icons
+resources/icons/*.ico
+resources/icons/*.png
+!resources/icons/*.svg
 
 # WiX build artifacts
 *.wixobj
 *.wixpdb
+*.wxs
 
 # Claude Code settings (local only)
 .claude/settings.local.json
-
-# WiX temporary files and extraction directories
-temp/
-*.wxs
