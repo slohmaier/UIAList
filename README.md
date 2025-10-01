@@ -21,15 +21,17 @@ UIAList leverages Microsoft's UI Automation (UIA) framework to instantly enumera
 
 **UI Automation Integration**:
 - Utilizes `IUIAutomation` COM interface for control discovery
-- Implements `IUIAutomationTreeWalker` for hierarchical control enumeration  
+- Implements `IUIAutomationTreeWalker` for hierarchical control enumeration
 - Supports multiple UIA control patterns: Invoke, Toggle, Selection, Legacy IAccessible
 - Fallback mouse simulation for maximum compatibility with screen reader environments
 
-**Qt Framework Implementation**:
-- Built with Qt 6.9.x for cross-platform UI consistency
-- Custom event filtering for enhanced keyboard navigation
-- System tray integration for unobtrusive background operation
-- Dynamic UI state management and accessibility event generation
+**WinUI 3 Framework Implementation** (v0.2.0+):
+- Built with WinUI 3 and C++/WinRT for native Windows performance
+- Modern XAML-based UI with Fluent Design System
+- Native Windows accessibility APIs integration
+- **Zero LGPL dependencies** - fully commercial-friendly
+- System tray integration using Win32 APIs
+- Background threading with std::thread for responsive UI
 
 ## Installation & Usage
 
@@ -123,64 +125,92 @@ struct ControlInfo {
 
 ### Prerequisites
 
-- **Visual Studio 2022** with C++ development tools
-- **Qt 6.9.2** with MSVC2022 compilers (both x64 and ARM64)
-- **Windows 10/11 SDK** (latest version)
-- **CMake 3.16+**
-- **WiX Toolset v6.0** (for MSI installers)
-- **Windows App SDK** (for MSIX packages)
+- **Visual Studio 2022** (17.8 or later) with C++ development tools
+- **Windows 11 SDK** (10.0.22621.0 or later)
+- **CMake 3.20+**
+- **NuGet CLI** (for package restore)
+- **Windows App SDK** (automatically restored via NuGet)
+
+**No Qt installation required!** This version uses WinUI 3.
 
 ### Quick Build
 
-Use the unified deployment script from the `deployment/` directory:
+#### Method 1: Visual Studio
 
-```powershell
-# Build all package types for both architectures
-cd deployment
-./deploy.ps1
-
-# Build only ZIP packages
-./deploy.ps1 -ZipOnly
-
-# Build only for x64 architecture  
-./deploy.ps1 -Architectures @('x64')
-
-# Skip build, only package existing builds
-./deploy.ps1 -SkipBuild
+```
+1. Open CMakeLists.txt with Visual Studio
+2. Visual Studio will automatically configure CMake
+3. Build > Build All (Ctrl+Shift+B)
 ```
 
-### Package Types Created
-
-- **Portable ZIP**: `UIAList-Portable-v0.1.0-{arch}.zip`
-- **MSI Installer**: `UIAList-Installer-v0.1.0-{arch}.msi` 
-- **MSIX Package**: `UIAList-Store-v0.1.0-{arch}.msix`
-
-All packages are created in the `deployment/` directory.
-
-### Manual Build
-
-If you prefer manual building:
+#### Method 2: Command Line
 
 ```cmd
-# Configure for x64
-cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_PREFIX_PATH="C:\Qt\6.9.2\msvc2022_64"
+# Navigate to project directory
+cd UIAList
+
+# Restore NuGet packages
+nuget restore packages.config -PackagesDirectory packages
+
+# Create build directory
+mkdir build
+cd build
+
+# Configure CMake
+cmake .. -G "Visual Studio 17 2022" -A x64
 
 # Build
 cmake --build . --config Release
 
-# Configure for ARM64
-cmake .. -G "Visual Studio 17 2022" -A ARM64 -DCMAKE_PREFIX_PATH="C:\Qt\6.9.2\msvc2022_arm64"
-cmake --build . --config Release
+# Output: build\Release\UIAList.exe
 ```
+
+### Package Types Created
+
+- **MSIX Package**: `UIAList-v0.2.0-{arch}.msix` (Microsoft Store)
+- **Portable**: Direct executable (no installation required)
+
+### Detailed Build Instructions
+
+See [BUILD_GUIDE.md](BUILD_GUIDE.md) for comprehensive build instructions, troubleshooting, and packaging.
+
+## Version History
+
+### v0.2.0 (WinUI 3 Port)
+- **Complete rewrite** using WinUI 3 and C++/WinRT
+- **Zero LGPL dependencies** - fully commercial and Microsoft Store compatible
+- Native Windows performance with Fluent Design System
+- All core functionality preserved from v0.1.0
+- Smaller package size (~5MB vs ~50MB)
+- Better Windows integration
+
+### v0.1.0 (Qt Version)
+- Initial release using Qt 6.9.x framework
+- Complete UI Automation integration
+- Screen reader optimization
+- Multi-language support (English, German)
+
+## License & Dependencies
+
+**UIAList**: GNU General Public License v3.0
+
+**Dependencies** (v0.2.0):
+- Windows App SDK (MIT License) ✅
+- Windows SDK (Microsoft) ✅
+- C++ Standard Library (Microsoft) ✅
+
+**No LGPL dependencies** - Fully compatible with commercial distribution and Microsoft Store.
 
 ## Development
 
-This application was entirely developed using **Claude Code** - Anthropic's AI-powered development assistant. From initial concept to final implementation, Claude Code handled:
+This application was entirely developed using **Claude Code** - Anthropic's AI-powered development assistant. From initial concept through Qt implementation to WinUI3 migration, Claude Code handled:
 
-- Complete C++/Qt codebase architecture and implementation
+- Complete C++/Qt initial codebase (v0.1.0)
+- WinUI 3 migration and C++/WinRT implementation (v0.2.0)
 - Windows UI Automation API integration
 - Screen reader compatibility optimization
-- User interface design and accessibility features
+- XAML UI design and accessibility features
+- Build system and deployment automation
 - Documentation and technical specification
 
 ---

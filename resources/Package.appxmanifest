@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+         xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
+         xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+         xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+         xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+         xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+         IgnorableNamespaces="mp uap uap3 desktop rescap">
+
+  <Identity Name="StefanLohmaier.UIAList"
+            Publisher="CN=Stefan Lohmaier"
+            Version="0.2.0.0" />
+
+  <Properties>
+    <DisplayName>UIAList - Accessibility Tool for Screen Readers</DisplayName>
+    <PublisherDisplayName>Stefan Lohmaier</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+    <Description>UIAList is an accessibility tool for blind and visually impaired users who rely on screen readers like JAWS, NVDA, or Windows Narrator. It lists all controls by name and type with instant search and keyboard navigation, eliminating sequential tabbing. Built with WinUI3 for native Windows performance.</Description>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.22631.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="en-US" />
+    <Resource Language="de-DE" />
+  </Resources>
+
+  <Applications>
+    <Application Id="UIAList" Executable="UIAList.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+        DisplayName="UIAList"
+        Description="Control navigator for screen reader users"
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png">
+
+        <uap:DefaultTile
+          Wide310x150Logo="Assets\Wide310x150Logo.png"
+          Square71x71Logo="Assets\Square71x71Logo.png"
+          Square310x310Logo="Assets\Square310x310Logo.png"
+          ShortName="UIAList">
+          <uap:ShowNameOnTiles>
+            <uap:ShowOn Tile="square150x150Logo"/>
+            <uap:ShowOn Tile="wide310x150Logo"/>
+            <uap:ShowOn Tile="square310x310Logo"/>
+          </uap:ShowNameOnTiles>
+        </uap:DefaultTile>
+
+        <uap:SplashScreen Image="Assets\SplashScreen.png" />
+      </uap:VisualElements>
+
+      <Extensions>
+        <!-- Full trust desktop app -->
+        <desktop:Extension Category="windows.fullTrustProcess" Executable="UIAList.exe" />
+
+        <!-- Startup task for auto-start -->
+        <desktop:Extension Category="windows.startupTask" Executable="UIAList.exe" EntryPoint="Windows.FullTrustApplication">
+          <desktop:StartupTask TaskId="UIAListStartup" Enabled="false" DisplayName="UIAList" />
+        </desktop:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <!-- Required for full trust desktop apps -->
+    <rescap:Capability Name="runFullTrust" />
+
+    <!-- Allow input injection for control interaction -->
+    <rescap:Capability Name="inputInjectionBrokered" />
+  </Capabilities>
+</Package>

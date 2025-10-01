@@ -6,48 +6,72 @@ This document contains important information about the UIAList project for Claud
 
 **UIAList** is a Windows accessibility tool for blind and visually impaired screen reader users (JAWS, NVDA, Windows Narrator). It lists all UI controls in the foreground application with instant search and keyboard navigation, eliminating the need for sequential tabbing.
 
-## Technology Stack
+## Technology Stack (v0.2.0 - WinUI3)
 
-- **Language**: C++ (MSVC 2022)
-- **Framework**: Qt 6.9.x
-- **Build System**: CMake 3.16+
-- **Windows API**: UI Automation (IUIAutomation), COM
-- **Architectures**: x64, ARM64
+- **Language**: C++20 with C++/WinRT
+- **Framework**: WinUI 3 (Windows App SDK 1.5+)
+- **UI**: XAML with Fluent Design System
+- **Build System**: CMake 3.20+ with Visual Studio 2022
+- **Windows API**: UI Automation (IUIAutomation), COM, Win32
+- **Architectures**: x64, ARM64 (planned)
+- **Dependencies**: Zero LGPL - Windows App SDK (MIT), Windows SDK
 
-## Core Architecture
+## Legacy Technology Stack (v0.1.0 - Qt)
+
+- **Framework**: Qt 6.9.x (LGPL) - **Removed in v0.2.0**
+- **Reason for Migration**: Eliminate LGPL dependencies for commercial Microsoft Store distribution
+
+## Core Architecture (v0.2.0 - WinUI3)
 
 ### Main Components
 
-1. **UIAList** (`src/uialist.cpp/.h`)
-   - Main window and application logic
-   - UI Automation integration
-   - Control enumeration via background worker
-   - Mouse simulation for control interaction
+1. **App** (`src/App.xaml.cpp/.h`)
+   - WinUI 3 application entry point
+   - Window creation and lifecycle management
 
-2. **UIAListIcon** (`src/uialisticon.cpp/.h`)
-   - System tray integration
-   - Global hotkey registration (default: Ctrl+Alt+U)
-   - Context menu (Settings, About, Exit)
+2. **MainWindow** (`src/MainWindow.xaml.cpp/.h`)
+   - Main window XAML UI with Fluent Design
+   - Filter/search box, controls ListView, action buttons
+   - Arrow key navigation in filter box
+   - Screen reader accessibility integration
+   - Loading overlay with progress ring
 
-3. **ControlEnumerationWorker** (in `src/uialist.cpp`)
-   - Background thread for control discovery
-   - Walks UI Automation tree
-   - Emits signals for found controls
+3. **ControlEnumerator** (`src/ControlEnumerator.cpp/.h`)
+   - Background std::thread for control discovery
+   - Walks UI Automation tree (exact Qt algorithm port)
+   - Callback-based progress reporting
    - Cancellable operation
 
-4. **SettingsDialog** (`src/settingsdialog.cpp/.h`)
-   - Auto-start configuration (Windows Registry)
-   - Default action selection (Click/Double Click/Focus)
-   - Global hotkey customization
+4. **ControlInteraction** (`src/ControlInteraction.cpp/.h`)
+   - Static helper class for control interaction
+   - Click, DoubleClick, Focus methods
+   - Multiple fallback strategies (exact Qt port)
+   - Mouse simulation + UIA patterns
 
-5. **WelcomeDialog** (`src/welcomedialog.cpp/.h`)
-   - First-run welcome screen
-   - Basic usage instructions
+5. **SystemTrayManager** (`src/SystemTrayManager.cpp/.h`)
+   - Native Win32 Shell_NotifyIcon system tray
+   - Global hotkey via RegisterHotKey (default: Ctrl+Alt+U)
+   - Context menu (Settings, About, Exit)
+   - Hidden window for message handling
 
-6. **AboutDialog** (`src/aboutdialog.cpp/.h`)
-   - Version information
-   - License details (GPL v3)
+6. **SettingsManager** (`src/SettingsManager.cpp/.h`)
+   - Windows Registry-based settings storage
+   - Singleton pattern for global access
+   - Auto-start, default action, hotkey settings
+
+7. **SettingsDialog** (`src/SettingsDialog.xaml.cpp/.h`)
+   - ContentDialog for settings
+   - Hotkey capture mode
+   - Auto-start checkbox, default action combo box
+
+8. **WelcomeDialog** (`src/WelcomeDialog.xaml.cpp/.h`)
+   - First-run welcome ContentDialog
+   - Feature overview and usage instructions
+
+9. **AboutDialog** (`src/AboutDialog.xaml.cpp/.h`)
+   - Application information
    - Reset settings functionality
+   - GitHub links
 
 ## Key Features & Implementation Details
 
