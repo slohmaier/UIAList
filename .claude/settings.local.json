@@ -36,7 +36,18 @@
       "Bash(\"C:\\Qt\\Tools\\CMake_64\\bin\\cmake.exe\" -DCMAKE_PREFIX_PATH=\"C:\\Qt\\6.9.1\\msvc2022_64\" ..)",
       "Bash(./UIAList.exe)",
       "Bash(notepad.exe)",
-      "Bash(New-Item -ItemType Directory -Path \"translations\" -Force)"
+      "Bash(New-Item -ItemType Directory -Path \"translations\" -Force)",
+      "Bash(git log:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nAdd comprehensive user guide and developer documentation\n\n- Add docs/USER_GUIDE.md with complete end-user documentation\n  - Detailed keyboard navigation guide with arrow key behavior in search box\n  - Screen reader integration and announcement details\n  - All control actions (Click, Double Click, Focus) explained\n  - Settings configuration guide\n  - Tips for JAWS, NVDA, and Windows Narrator users\n  \n- Add CLAUDE.md with developer memory and project context\n  - Architecture overview and key component descriptions\n  - Implementation details for critical features\n  - Code locations for keyboard navigation and screen reader support\n  - Build system and deployment process documentation\n  - Testing checklists and future enhancement ideas\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push:*)",
+      "Bash(git checkout:*)",
+      "Bash(nuget restore:*)",
+      "Bash(msbuild:*)",
+      "Bash(\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe\" UIAList.sln /t:Build /p:Configuration=Release /p:Platform=x64 /v:minimal)",
+      "Bash(\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe\" UIAList.sln /t:Build /p:Configuration=Release /p:Platform=x64 /verbosity:minimal)",
+      "Bash(git reset:*)",
+      "Bash(git merge:*)",
+      "Bash(git branch:*)"
     ],
     "deny": []
   }
