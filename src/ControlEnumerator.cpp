@@ -10,9 +10,8 @@
 
 #include "pch.h"
 #include "ControlEnumerator.h"
-#include "MainWindow.xaml.h"
 
-namespace winrt::UIAList::implementation
+namespace UIAList
 {
     ControlEnumerator::ControlEnumerator()
         : m_uiAutomation(nullptr)
@@ -187,7 +186,13 @@ namespace winrt::UIAList::implementation
         // Create ControlInfo and emit callback
         if (m_onControlFound)
         {
-            ControlInfo info(displayText, controlName, element, controlType);
+            ControlInfo info;
+            info.Name = displayText;
+            info.AutomationId = controlName;
+            info.Type = GetControlTypeString(controlType);
+            winrt::com_ptr<IUIAutomationElement> elementPtr;
+            elementPtr.copy_from(element);
+            info.Element = std::move(elementPtr);
             m_onControlFound(info);
         }
 

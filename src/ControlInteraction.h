@@ -12,7 +12,7 @@
 
 #include "pch.h"
 
-namespace winrt::UIAList::implementation
+namespace UIAList
 {
     // Static helper class for control interaction
     // Ports the exact logic from Qt version (uialist.cpp:715-979)

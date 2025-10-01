@@ -10,13 +10,12 @@
 
 #include "pch.h"
 #include "SystemTrayManager.h"
-#include "MainWindow.xaml.h"
 #include "SettingsManager.h"
 
 #define WM_TRAYICON (WM_USER + 1)
 #define HOTKEY_ID 1
 
-namespace winrt::UIAList::implementation
+namespace UIAList
 {
     SystemTrayManager& SystemTrayManager::GetInstance()
     {
@@ -40,7 +39,7 @@ namespace winrt::UIAList::implementation
         CreateTrayIcon();
 
         // Register default hotkey (Ctrl+Alt+U)
-        auto settings = SettingsManager::GetInstance();
+        auto& settings = SettingsManager::GetInstance();
         // TODO: Load hotkey from settings
         RegisterGlobalHotkey(MOD_CONTROL | MOD_ALT, 'U');
 
@@ -164,15 +163,14 @@ namespace winrt::UIAList::implementation
         // Get foreground window before activating our window
         HWND foregroundWindow = GetForegroundWindowBeforeActivation();
 
-        // Show main window for the foreground window
+        // TODO: Show main window for the foreground window
+        // This needs to be connected to the MainWindow class
+        /*
         if (m_mainWindow)
         {
-            auto mainWindowImpl = m_mainWindow.try_as<MainWindow>();
-            if (mainWindowImpl)
-            {
-                mainWindowImpl->ShowForWindow(foregroundWindow);
-            }
+            m_mainWindow.Activate();
         }
+        */
     }
 
     void SystemTrayManager::ShowContextMenu()

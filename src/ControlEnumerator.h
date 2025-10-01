@@ -12,9 +12,15 @@
 
 #include "pch.h"
 
-namespace winrt::UIAList::implementation
+namespace UIAList
 {
-    struct ControlInfo;  // Forward declaration
+    struct ControlInfo
+    {
+        winrt::hstring Name;
+        winrt::hstring Type;
+        winrt::hstring AutomationId;
+        winrt::com_ptr<IUIAutomationElement> Element;
+    };
 
     class ControlEnumerator
     {

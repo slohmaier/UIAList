@@ -51,15 +51,14 @@ CMakeLists.txt.user*
 *.idb
 *.ilk
 *.pdb
-*.sln
 *.suo
 *.vcproj
 *vcproj.*.*.user
 *.ncb
 *.sdf
 *.opensdf
-*.vcxproj
-*vcxproj.*
+*.vcxproj.user
+*.vcxproj.filters
 
 # MinGW generated files
 *.Debug
@@ -72,6 +71,8 @@ CMakeLists.txt.user*
 # --------
 *.dll
 *.exe
+bin/
+obj/
 
 # Directories with generated files
 .moc/
@@ -117,6 +118,13 @@ resources/icons/*.png
 *.wixobj
 *.wixpdb
 *.wxs
+
+# C++/WinRT generated files
+XamlMetaDataProvider.cpp
+XamlMetaDataProvider.h
+XamlMetaDataProvider.idl
+*.winmd
+*.pri
 
 # Claude Code settings (local only)
 .claude/settings.local.json

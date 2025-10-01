@@ -14,10 +14,9 @@
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
-#include <shellapi.h>
-#include <UIAutomation.h>
-#include <comdef.h>
-#include <atlbase.h>
+#include <unknwn.h>
+#include <restrictederrorinfo.h>
+#include <hstring.h>
 
 // WinRT headers
 #include <winrt/Windows.Foundation.h>
@@ -37,6 +36,12 @@
 
 // Windows App SDK
 #include <Microsoft.UI.Xaml.Window.h>
+
+// Win32 APIs (after WinRT)
+#include <shellapi.h>
+#include <UIAutomation.h>
+#include <comdef.h>
+#include <atlbase.h>
 
 // STL headers
 #include <string>

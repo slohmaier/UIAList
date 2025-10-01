@@ -10,26 +10,21 @@
 
 #pragma once
 
-#include "pch.h"
-#include "App.xaml.g.h"
+#include <winrt/Microsoft.UI.Xaml.h>
 
-namespace winrt::UIAList::implementation
+namespace UIAList
 {
-    struct App : AppT<App>
+    class App
     {
+    public:
         App();
         ~App();
 
-        void OnLaunched(Microsoft::UI::Xaml::LaunchActivatedEventArgs const&);
+        void Run();
+        void Exit();
 
     private:
         winrt::Microsoft::UI::Xaml::Window m_window{ nullptr };
-    };
-}
-
-namespace winrt::UIAList::factory_implementation
-{
-    struct App : AppT<App, implementation::App>
-    {
+        bool m_running{ false };
     };
 }

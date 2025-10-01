@@ -12,7 +12,7 @@
 
 #include "pch.h"
 
-namespace winrt::UIAList::implementation
+namespace UIAList
 {
     // Settings manager using Windows Registry
     // Replaces Qt's QSettings
@@ -46,8 +46,8 @@ namespace winrt::UIAList::implementation
         winrt::hstring ReadString(const wchar_t* valueName, const wchar_t* defaultValue);
         void WriteString(const wchar_t* valueName, const wchar_t* value);
 
-        static constexpr wchar_t* REG_KEY_PATH = L"Software\\UIAList\\Settings";
-        static constexpr wchar_t* REG_AUTOSTART_PATH = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
-        static constexpr wchar_t* REG_AUTOSTART_NAME = L"UIAList";
+        static constexpr const wchar_t* REG_KEY_PATH = L"Software\\UIAList\\Settings";
+        static constexpr const wchar_t* REG_AUTOSTART_PATH = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+        static constexpr const wchar_t* REG_AUTOSTART_NAME = L"UIAList";
     };
 }

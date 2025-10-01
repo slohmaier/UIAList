@@ -11,7 +11,7 @@
 #include "pch.h"
 #include "ControlInteraction.h"
 
-namespace winrt::UIAList::implementation
+namespace UIAList
 {
     // Exact port of Qt implementation (uialist.cpp:715-803)
     bool ControlInteraction::ClickControl(IUIAutomationElement* element)

@@ -11,7 +11,7 @@
 #include "pch.h"
 #include "SettingsManager.h"
 
-namespace winrt::UIAList::implementation
+namespace UIAList
 {
     SettingsManager& SettingsManager::GetInstance()
     {

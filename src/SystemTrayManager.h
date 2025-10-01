@@ -12,7 +12,7 @@
 
 #include "pch.h"
 
-namespace winrt::UIAList::implementation
+namespace UIAList
 {
     // System tray icon and global hotkey manager
     // Replaces Qt's QSystemTrayIcon and global hotkey handling
